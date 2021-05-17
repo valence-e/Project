@@ -1,4 +1,29 @@
-# DNN+NeuroSim V1.3
+# Project
+
+## This is a modification of Neurosim. JUst ignore
+### Todo
+- [ ] Analyzing NeuroSim Architecture              (W1)
+   - [ ] Scheduling Visuals   [A]
+   - [ ] Dataflow Visuals     [Y]
+   - [ ] Pipeline Visuals     [Y]
+   - [ ] Circuit Visuals      [A]
+- [ ] Modifications
+   - [ ] Sparsity Feature (**Sparse ReRAM engine: joint exploration of activation and weight sparsity in compressed neural networks**)
+      - [ ] List of Sparse Networks for benchmark  (W1/W2)  [Y]
+      - [ ] List of Hardware Addition              (W1/W2)  [A]
+      - [ ] Current result of those benchmark      (W2)        -- need to make model.py for each of the new benchmark
+      - [ ] Implementation                         (W2)
+   - [ ] Different Dataflow Options
+      - [ ] Paper on ReRAM Dataflows               (W2/W3)
+      - [ ] List of Hardware Changes               (W2/W3)
+      - [ ] List of Networks for benchmark         (W2/W4)
+      - [ ] Current result of those benchmark      (W2/W3)     -- need to make model.py for each of the new benchmark
+      - [ ] Implementation                         (W3)
+   - [ ] TBD
+- [ ] Reports     (W4)
+   - [ ] Story
+   - [ ] Results
+   - [ ] Figures
 
 The DNN+NeuroSim framework was developed by [Prof. Shimeng Yu's group](https://shimeng.ece.gatech.edu/) (Georgia Institute of Technology). The model is made publicly available on a non-commercial basis. Copyright of the model is maintained by the developers, and the model is distributed under the terms of the [Creative Commons Attribution-NonCommercial 4.0 International Public License](http://creativecommons.org/licenses/by-nc/4.0/legalcode)
 
