@@ -1,6 +1,10 @@
 # Project
 
 ## This is a modification of Neurosim. JUst ignore
+
+### Issues (Unresolved)
+- [ ] In main.cpp:243, function ChipCalculatePerformance(...) has a problem in argument passing (error: SIGABRT)
+
 ### Todo
 - [ ] Analyzing NeuroSim Architecture              (W1)
    - [ ] Scheduling Visuals   [A]
