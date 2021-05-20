@@ -58,7 +58,7 @@ void TileCalculatePerformance(const vector<vector<double> > &newMemory, const ve
 			int novelMap, double numPE, double peSize, 
 			int speedUpRow, int speedUpCol, int weightMatrixRow, int weightMatrixCol, int numInVector, MemCell& cell, double *readLatency, double *readDynamicEnergy, double *leakage,
 			double *bufferLatency, double *bufferDynamicEnergy, double *icLatency, double *icDynamicEnergy,
-			double *coreLatencyADC, double *coreLatencyAccum, double *coreLatencyOther, double *coreEnergyADC, double *coreEnergyAccum, double *coreEnergyOther, bool CalculateclkFreq, double*clkPeriod);
+			double *coreLatencyADC, double *coreLatencyAccum, double *coreLatencyOther, double *coreEnergyADC, double *coreEnergyAccum, double *coreEnergyOther, bool CalculateclkFreq, double*clkPeriod, TotalEnergy *totalEnergy);
 		
 vector<vector<double> > CopyPEArray(const vector<vector<double> > &orginal, int positionRow, int positionCol, int numRow, int numCol);
 vector<vector<double> > CopyPEInput(const vector<vector<double> > &orginal, int positionRow, int numInputVector, int numRow);

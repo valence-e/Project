@@ -99,7 +99,7 @@ Param::Param() {
 	currentMode = true;         // false: MLSA use VSA
 	                            // true: MLSA use CSA
 	
-	pipeline = false;            // false: layer-by-layer process --> huge leakage energy in HP
+	pipeline = true;            // false: layer-by-layer process --> huge leakage energy in HP
 								// true: pipeline process
 	speedUpDegree = 8;          // 1 = no speed up --> original speed
 								// 2 and more : speed up ratio, the higher, the faster

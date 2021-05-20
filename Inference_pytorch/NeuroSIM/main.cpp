@@ -237,6 +237,10 @@ int main(int argc, char * argv[]) {
 	double coreEnergyAccum = 0;
 	double coreEnergyOther = 0;
 	
+	// Energy break apart
+	TotalEnergy chipTotalEnergy;
+	TotalEnergy layerTotalEnergy;
+
 	if (param->synchronous){
 		// calculate clkFreq
 		for (int i=0; i<netStructure.size(); i++) {		
@@ -244,7 +248,7 @@ int main(int argc, char * argv[]) {
 						netStructure, markNM, numTileEachLayer, utilizationEachLayer, speedUpEachLayer, tileLocaEachLayer,
 						numPENM, desiredPESizeNM, desiredTileSizeCM, desiredPESizeCM, CMTileheight, CMTilewidth, NMTileheight, NMTilewidth,
 						&layerReadLatency, &layerReadDynamicEnergy, &tileLeakage, &layerbufferLatency, &layerbufferDynamicEnergy, &layericLatency, &layericDynamicEnergy,
-						&coreLatencyADC, &coreLatencyAccum, &coreLatencyOther, &coreEnergyADC, &coreEnergyAccum, &coreEnergyOther, true, &layerclkPeriod);
+						&coreLatencyADC, &coreLatencyAccum, &coreLatencyOther, &coreEnergyADC, &coreEnergyAccum, &coreEnergyOther, true, &layerclkPeriod, &layerTotalEnergy);
 			if(clkPeriod < layerclkPeriod){
 				clkPeriod = layerclkPeriod;
 			}			
@@ -265,7 +269,7 @@ int main(int argc, char * argv[]) {
 						netStructure, markNM, numTileEachLayer, utilizationEachLayer, speedUpEachLayer, tileLocaEachLayer,
 						numPENM, desiredPESizeNM, desiredTileSizeCM, desiredPESizeCM, CMTileheight, CMTilewidth, NMTileheight, NMTilewidth,
 						&layerReadLatency, &layerReadDynamicEnergy, &tileLeakage, &layerbufferLatency, &layerbufferDynamicEnergy, &layericLatency, &layericDynamicEnergy,
-						&coreLatencyADC, &coreLatencyAccum, &coreLatencyOther, &coreEnergyADC, &coreEnergyAccum, &coreEnergyOther, false, &layerclkPeriod);
+						&coreLatencyADC, &coreLatencyAccum, &coreLatencyOther, &coreEnergyADC, &coreEnergyAccum, &coreEnergyOther, false, &layerclkPeriod, &layerTotalEnergy);
 			if (param->synchronous) {
 				layerReadLatency *= clkPeriod;
 				layerbufferLatency *= clkPeriod;
@@ -322,6 +326,61 @@ int main(int argc, char * argv[]) {
 			chipEnergyADC += coreEnergyADC;
 			chipEnergyAccum += coreEnergyAccum;
 			chipEnergyOther += coreEnergyOther;
+
+			// New one
+			chipTotalEnergy.globalBuffer += layerTotalEnergy.globalBuffer;
+			chipTotalEnergy.globalAccumulator += layerTotalEnergy.globalAccumulator;
+			chipTotalEnergy.globalActivation += layerTotalEnergy.globalActivation;
+			chipTotalEnergy.globalMaxPool += layerTotalEnergy.globalMaxPool;
+			chipTotalEnergy.globalInterconnect += layerTotalEnergy.globalInterconnect;
+			chipTotalEnergy.tileBuffer += layerTotalEnergy.tileBuffer;
+			chipTotalEnergy.tileInputBuffer += layerTotalEnergy.tileInputBuffer;
+			chipTotalEnergy.tileOutputBuffer += layerTotalEnergy.tileOutputBuffer;
+			chipTotalEnergy.tileAccumulator += layerTotalEnergy.tileAccumulator;
+			chipTotalEnergy.tileActivation += layerTotalEnergy.tileActivation;
+			chipTotalEnergy.tileInterconnect += layerTotalEnergy.tileInterconnect;
+			chipTotalEnergy.PEBuffer += layerTotalEnergy.PEBuffer;
+			chipTotalEnergy.PEInputBuffer += layerTotalEnergy.PEInputBuffer;
+			chipTotalEnergy.PEOutputBuffer += layerTotalEnergy.PEOutputBuffer;
+			chipTotalEnergy.PEAccumulator += layerTotalEnergy.PEAccumulator;
+			chipTotalEnergy.PEInterconnect += layerTotalEnergy.PEInterconnect;
+			chipTotalEnergy.PESubArray += layerTotalEnergy.PESubArray;
+			chipTotalEnergy.PESubArrayADC += layerTotalEnergy.PESubArrayADC;
+			chipTotalEnergy.PESubArrayOther += layerTotalEnergy.PESubArrayOther;
+			chipTotalEnergy.PESubArrayAccum += layerTotalEnergy.PESubArrayAccum;
+			chipTotalEnergy.PESubArrayStorage += layerTotalEnergy.PESubArrayStorage;
+
+			cout << endl;
+			cout << "************************ Breakdown of Energy per Hierarchy *************************" << endl;
+			cout << endl;
+			cout << "----------- Buffers " << endl;
+			cout << "---------------- Global Buffers:\t" << layerTotalEnergy.globalBuffer*1e12 << "pj" << endl;
+			cout << "---------------- Tile Buffers:\t\t" << layerTotalEnergy.tileBuffer*1e12 << "pj" << endl;
+			cout << "--------------------- Input Buffers:\t" << layerTotalEnergy.tileInputBuffer*1e12 << "pj" << endl;
+			cout << "--------------------- Output Buffers:\t" << layerTotalEnergy.tileOutputBuffer*1e12 << "pj" << endl;
+			cout << "---------------- PE Buffers:\t\t" << layerTotalEnergy.PEBuffer*1e12 << "pj" << endl;
+			cout << "--------------------- Input Buffers:\t" << layerTotalEnergy.PEInputBuffer*1e12 << "pj" << endl;
+			cout << "--------------------- Output Buffers:\t" << layerTotalEnergy.PEOutputBuffer*1e12 << "pj" << endl;
+			cout << "----------- Interconnect " << endl;
+			cout << "---------------- Global HTree:\t" << layerTotalEnergy.globalInterconnect*1e12 << "pj" << endl;
+			cout << "---------------- Tile HTree:\t" << layerTotalEnergy.tileInterconnect*1e12 << "pj" << endl;
+			cout << "---------------- PE Bus:\t\t" << layerTotalEnergy.PEInterconnect*1e12 << "pj" << endl;
+			cout << "----------- Accumulators " << endl;
+			cout << "---------------- Global Acc:\t" << layerTotalEnergy.globalAccumulator*1e12 << "pj" << endl;
+			cout << "---------------- Tile Acc:\t\t" << layerTotalEnergy.tileAccumulator*1e12 << "pj" << endl;
+			cout << "---------------- PE Acc:\t\t" << layerTotalEnergy.PEAccumulator*1e12 << "pj" << endl;
+			cout << "----------- Activation:\t\t" << endl;
+			cout << "---------------- Global Act:\t" << layerTotalEnergy.globalActivation*1e12 << "pj" << endl;
+			cout << "---------------- Tile Act:\t\t" << layerTotalEnergy.tileActivation*1e12 << "pj" << endl;
+			cout << "----------- SubArray:\t\t" << layerTotalEnergy.PESubArray*1e12 << "pj" << endl;
+			cout << "---------------- Acc:\t" << layerTotalEnergy.PESubArrayAccum*1e12 << "pj" << endl;
+			cout << "---------------- ADC:\t" << layerTotalEnergy.PESubArrayADC*1e12 << "pj" << endl;
+			cout << "---------------- Other:\t" << layerTotalEnergy.PESubArrayOther*1e12 << "pj" << endl;
+			cout << "---------------- For Storage only: " << layerTotalEnergy.PESubArrayStorage*1e12 << "pj" << endl;
+			cout << "----------- MaxPool:\t\t" << layerTotalEnergy.globalMaxPool*1e12 << "pj" << endl;
+			cout << endl;
+			cout << "************************ Breakdown of Energy per Hierarchy *************************" << endl;
+			cout << endl;
 		}
 	} else {
 		// pipeline system
@@ -343,12 +402,14 @@ int main(int argc, char * argv[]) {
 		vector<double> coreLatencyOtherPerLayer;
 		vector<double> coreEnergyOtherPerLayer;
 		
+		vector<TotalEnergy> totalEnergyPerLayer;
+		
 		for (int i=0; i<netStructure.size(); i++) {
 			ChipCalculatePerformance(inputParameter, tech, cell, i, argv[2*i+4], argv[2*i+4], argv[2*i+5], netStructure[i][6],
 						netStructure, markNM, numTileEachLayer, utilizationEachLayer, speedUpEachLayer, tileLocaEachLayer,
 						numPENM, desiredPESizeNM, desiredTileSizeCM, desiredPESizeCM, CMTileheight, CMTilewidth, NMTileheight, NMTilewidth,
 						&layerReadLatency, &layerReadDynamicEnergy, &tileLeakage, &layerbufferLatency, &layerbufferDynamicEnergy, &layericLatency, &layericDynamicEnergy,
-						&coreLatencyADC, &coreLatencyAccum, &coreLatencyOther, &coreEnergyADC, &coreEnergyAccum, &coreEnergyOther, false, &layerclkPeriod);
+						&coreLatencyADC, &coreLatencyAccum, &coreLatencyOther, &coreEnergyADC, &coreEnergyAccum, &coreEnergyOther, false, &layerclkPeriod, &layerTotalEnergy);
 			if (param->synchronous) {
 				layerReadLatency *= clkPeriod;
 				layerbufferLatency *= clkPeriod;
@@ -374,6 +435,7 @@ int main(int argc, char * argv[]) {
 			coreEnergyAccumPerLayer.push_back(coreEnergyAccum);
 			coreLatencyOtherPerLayer.push_back(coreLatencyOther);
 			coreEnergyOtherPerLayer.push_back(coreEnergyOther);
+			totalEnergyPerLayer.push_back(layerTotalEnergy);
 		}
 		
 		for (int i=0; i<netStructure.size(); i++) {
@@ -401,7 +463,7 @@ int main(int argc, char * argv[]) {
 			cout << endl;
 			cout << "************************ Breakdown of Latency and Dynamic Energy *************************" << endl;
 			cout << endl;
-			
+
 			chipReadLatency = systemClock;
 			chipReadDynamicEnergy += readDynamicEnergyPerLayer[i];
 			chipLeakageEnergy += leakagePowerPerLayer[i] * (systemClock-readLatencyPerLayer[i]);
@@ -417,6 +479,62 @@ int main(int argc, char * argv[]) {
 			chipEnergyADC += coreEnergyADCPerLayer[i];
 			chipEnergyAccum += coreEnergyAccumPerLayer[i];
 			chipEnergyOther += coreEnergyOtherPerLayer[i];
+
+			// New one
+			chipTotalEnergy.globalBuffer += layerTotalEnergy.globalBuffer;
+			chipTotalEnergy.globalAccumulator += layerTotalEnergy.globalAccumulator;
+			chipTotalEnergy.globalActivation += layerTotalEnergy.globalActivation;
+			chipTotalEnergy.globalMaxPool += layerTotalEnergy.globalMaxPool;
+			chipTotalEnergy.globalInterconnect += layerTotalEnergy.globalInterconnect;
+			chipTotalEnergy.tileBuffer += layerTotalEnergy.tileBuffer;
+			chipTotalEnergy.tileInputBuffer += layerTotalEnergy.tileInputBuffer;
+			chipTotalEnergy.tileOutputBuffer += layerTotalEnergy.tileOutputBuffer;
+			chipTotalEnergy.tileAccumulator += layerTotalEnergy.tileAccumulator;
+			chipTotalEnergy.tileActivation += layerTotalEnergy.tileActivation;
+			chipTotalEnergy.tileInterconnect += layerTotalEnergy.tileInterconnect;
+			chipTotalEnergy.PEBuffer += layerTotalEnergy.PEBuffer;
+			chipTotalEnergy.PEInputBuffer += layerTotalEnergy.PEInputBuffer;
+			chipTotalEnergy.PEOutputBuffer += layerTotalEnergy.PEOutputBuffer;
+			chipTotalEnergy.PEAccumulator += layerTotalEnergy.PEAccumulator;
+			chipTotalEnergy.PEInterconnect += layerTotalEnergy.PEInterconnect;
+			chipTotalEnergy.PESubArray += layerTotalEnergy.PESubArray;
+			chipTotalEnergy.PESubArrayADC += layerTotalEnergy.PESubArrayADC;
+			chipTotalEnergy.PESubArrayOther += layerTotalEnergy.PESubArrayOther;
+			chipTotalEnergy.PESubArrayAccum += layerTotalEnergy.PESubArrayAccum;
+			chipTotalEnergy.PESubArrayStorage += layerTotalEnergy.PESubArrayStorage;
+
+			cout << endl;
+			cout << "************************ Breakdown of Energy per Hierarchy *************************" << endl;
+			cout << endl;
+			cout << "----------- Buffers " << endl;
+			cout << "---------------- Global Buffers:\t" << totalEnergyPerLayer[i].globalBuffer*1e12 << "pj" << endl;
+			cout << "---------------- Tile Buffers:\t\t" << totalEnergyPerLayer[i].tileBuffer*1e12 << "pj" << endl;
+			cout << "--------------------- Input Buffers:\t" << totalEnergyPerLayer[i].tileInputBuffer*1e12 << "pj" << endl;
+			cout << "--------------------- Output Buffers:\t" << totalEnergyPerLayer[i].tileOutputBuffer*1e12 << "pj" << endl;
+			cout << "---------------- PE Buffers:\t\t" << totalEnergyPerLayer[i].PEBuffer*1e12 << "pj" << endl;
+			cout << "--------------------- Input Buffers:\t" << totalEnergyPerLayer[i].PEInputBuffer*1e12 << "pj" << endl;
+			cout << "--------------------- Output Buffers:\t" << totalEnergyPerLayer[i].PEOutputBuffer*1e12 << "pj" << endl;
+			cout << "----------- Interconnect " << endl;
+			cout << "---------------- Global HTree:\t" << totalEnergyPerLayer[i].globalInterconnect*1e12 << "pj" << endl;
+			cout << "---------------- Tile HTree:\t" << totalEnergyPerLayer[i].tileInterconnect*1e12 << "pj" << endl;
+			cout << "---------------- PE Bus:\t\t" << totalEnergyPerLayer[i].PEInterconnect*1e12 << "pj" << endl;
+			cout << "----------- Accumulators " << endl;
+			cout << "---------------- Global Acc:\t" << totalEnergyPerLayer[i].globalAccumulator*1e12 << "pj" << endl;
+			cout << "---------------- Tile Acc:\t\t" << totalEnergyPerLayer[i].tileAccumulator*1e12 << "pj" << endl;
+			cout << "---------------- PE Acc:\t\t" << totalEnergyPerLayer[i].PEAccumulator*1e12 << "pj" << endl;
+			cout << "----------- Activation:\t\t" << endl;
+			cout << "---------------- Global Act:\t" << totalEnergyPerLayer[i].globalActivation*1e12 << "pj" << endl;
+			cout << "---------------- Tile Act:\t\t" << totalEnergyPerLayer[i].tileActivation*1e12 << "pj" << endl;
+			cout << "----------- SubArray:\t\t" << totalEnergyPerLayer[i].PESubArray*1e12 << "pj" << endl;
+			cout << "---------------- Acc:\t" << totalEnergyPerLayer[i].PESubArrayAccum*1e12 << "pj" << endl;
+			cout << "---------------- ADC:\t" << totalEnergyPerLayer[i].PESubArrayADC*1e12 << "pj" << endl;
+			cout << "---------------- Other:\t" << totalEnergyPerLayer[i].PESubArrayOther*1e12 << "pj" << endl;
+			cout << "---------------- For Storage only: " << totalEnergyPerLayer[i].PESubArrayStorage*1e12 << "pj" << endl;
+			cout << "----------- MaxPool:\t\t" << totalEnergyPerLayer[i].globalMaxPool*1e12 << "pj" << endl;
+			cout << endl;
+			cout << "************************ Breakdown of Energy per Hierarchy *************************" << endl;
+			cout << endl;
+
 		}
 		
 	}
@@ -486,6 +604,39 @@ int main(int argc, char * argv[]) {
 		cout << "Throughput FPS (Pipelined Process): " << 1/(chipReadLatency) << endl;
 		cout << "Compute efficiency TOPS/mm^2 (Pipelined Process): " << numComputation/(chipReadLatency*1e12)/(chipArea*1e6) << endl;
 	}
+
+	cout << endl;
+	cout << "************************ Breakdown of Energy per Hierarchy *************************" << endl;
+	cout << endl;
+	cout << "----------- Buffers " << endl;
+	cout << "---------------- Global Buffers:\t" << chipTotalEnergy.globalBuffer*1e12 << "pj" << endl;
+	cout << "---------------- Tile Buffers:\t\t" << chipTotalEnergy.tileBuffer*1e12 << "pj" << endl;
+	cout << "--------------------- Input Buffers:\t" << chipTotalEnergy.tileInputBuffer*1e12 << "pj" << endl;
+	cout << "--------------------- Output Buffers:\t" << chipTotalEnergy.tileOutputBuffer*1e12 << "pj" << endl;
+	cout << "---------------- PE Buffers:\t\t" << chipTotalEnergy.PEBuffer*1e12 << "pj" << endl;
+	cout << "--------------------- Input Buffers:\t" << chipTotalEnergy.PEInputBuffer*1e12 << "pj" << endl;
+	cout << "--------------------- Output Buffers:\t" << chipTotalEnergy.PEOutputBuffer*1e12 << "pj" << endl;
+	cout << "----------- Interconnect " << endl;
+	cout << "---------------- Global HTree:\t" << chipTotalEnergy.globalInterconnect*1e12 << "pj" << endl;
+	cout << "---------------- Tile HTree:\t" << chipTotalEnergy.tileInterconnect*1e12 << "pj" << endl;
+	cout << "---------------- PE Bus:\t\t" << chipTotalEnergy.PEInterconnect*1e12 << "pj" << endl;
+	cout << "----------- Accumulators " << endl;
+	cout << "---------------- Global Acc:\t" << chipTotalEnergy.globalAccumulator*1e12 << "pj" << endl;
+	cout << "---------------- Tile Acc:\t\t" << chipTotalEnergy.tileAccumulator*1e12 << "pj" << endl;
+	cout << "---------------- PE Acc:\t\t" << chipTotalEnergy.PEAccumulator*1e12 << "pj" << endl;
+	cout << "----------- Activation:\t\t" << endl;
+	cout << "---------------- Global Act:\t" << chipTotalEnergy.globalActivation*1e12 << "pj" << endl;
+	cout << "---------------- Tile Act:\t\t" << chipTotalEnergy.tileActivation*1e12 << "pj" << endl;
+	cout << "----------- SubArray:\t\t" << chipTotalEnergy.PESubArray*1e12 << "pj" << endl;
+	cout << "---------------- Acc:\t" << chipTotalEnergy.PESubArrayAccum*1e12 << "pj" << endl;
+	cout << "---------------- ADC:\t" << chipTotalEnergy.PESubArrayADC*1e12 << "pj" << endl;
+	cout << "---------------- Other:\t" << chipTotalEnergy.PESubArrayOther*1e12 << "pj" << endl;
+	cout << "---------------- For Storage only: " << chipTotalEnergy.PESubArrayStorage*1e12 << "pj" << endl;
+	cout << "----------- MaxPool:\t\t" << chipTotalEnergy.globalMaxPool*1e12 << "pj" << endl;
+	cout << endl;
+	cout << "************************ Breakdown of Energy per Hierarchy *************************" << endl;
+	cout << endl;
+
 	cout << "-------------------------------------- Hardware Performance Done --------------------------------------" <<  endl;
 	cout << endl;
 	auto stop = chrono::high_resolution_clock::now();

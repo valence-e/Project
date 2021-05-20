@@ -281,7 +281,7 @@ def _resnet(arch, block, layers, pretrained=None, progress=True, args=None, logg
                                               progress=progress)
         model.load_state_dict(state_dict, strict=False)
     elif pretrained is not None:
-        model.load_state_dict(torch.load(pretrained))
+        model.load_state_dict(torch.load(pretrained, map_location='cpu'))
     return model
 
 

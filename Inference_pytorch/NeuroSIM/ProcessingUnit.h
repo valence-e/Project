@@ -42,6 +42,7 @@
 #include "Technology.h"
 #include "MemCell.h"
 #include "SubArray.h"
+#include "Param.h"
  
 /*** Functions ***/
 void ProcessingUnitInitialize(SubArray *& subArray, InputParameter& inputParameter, Technology& tech, MemCell& cell, int _numSubArrayRowNM, int _numSubArrayColNM, int _numSubArrayRowCM, int _numSubArrayColCM);
@@ -50,7 +51,7 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 										int arrayDupRow, int arrayDupCol, int numSubArrayRow, int numSubArrayCol, int weightMatrixRow, int weightMatrixCol, 
 										int numInVector, MemCell& cell, bool NMpe, double *readLatency, double *readDynamicEnergy, double *leakage, 
 										double *bufferLatency, double *bufferDynamicEnergy, double *icLatency, double *icDynamicEnergy,
-										double *coreLatencyADC, double *coreLatencyAccum, double *coreLatencyOther, double *coreEnergyADC, double *coreEnergyAccum, double *coreEnergyOther, bool CalculateclkFreq, double*clkPeriod);
+										double *coreLatencyADC, double *coreLatencyAccum, double *coreLatencyOther, double *coreEnergyADC, double *coreEnergyAccum, double *coreEnergyOther, bool CalculateclkFreq, double*clkPeriod, TotalEnergy *totalEnergy);
 
 vector<vector<double> > CopySubArray(const vector<vector<double> > &orginal, int positionRow, int positionCol, int numRow, int numCol);
 vector<vector<double> > CopySubInput(const vector<vector<double> > &orginal, int positionRow, int numInputVector, int numRow);

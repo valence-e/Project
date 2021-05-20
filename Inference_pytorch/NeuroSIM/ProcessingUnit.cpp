@@ -274,7 +274,7 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 											int weightMatrixCol, int numInVector, MemCell& cell, bool NMpe, double *readLatency, double *readDynamicEnergy, double *leakage, 
 											double *bufferLatency, double *bufferDynamicEnergy, double *icLatency, double *icDynamicEnergy,
 											double *coreLatencyADC, double *coreLatencyAccum, double *coreLatencyOther, double *coreEnergyADC, 
-											double *coreEnergyAccum, double *coreEnergyOther, bool CalculateclkFreq, double *clkPeriod) {
+											double *coreEnergyAccum, double *coreEnergyOther, bool CalculateclkFreq, double *clkPeriod, TotalEnergy *totalEnergy) {
 	
 	/*** define how many subArray are used to map the whole layer ***/
 	*readLatency = 0;
@@ -295,9 +295,16 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 
 	if (arrayDupRow*arrayDupCol > 1) {
 		// weight matrix is duplicated among subArray
+		printf("\t\tduplication\n");
+
 		if (arrayDupRow < numSubArrayRow || arrayDupCol < numSubArrayCol) {
+			printf("\t\tcouple of subArrays\n");
 			// a couple of subArrays are mapped by the matrix
 			// need to redefine the data-grab start-point
+
+			printf("\t\t# subArr in row: %d\n", (int) ceil((double) weightMatrixRow/(double) param->numRowSubArray));
+			printf("\t\t# subArr in col: %d\n", (int) ceil((double) weightMatrixCol/(double) param->numColSubArray));
+
 			for (int i=0; i<ceil((double) weightMatrixRow/(double) param->numRowSubArray); i++) {
 				for (int j=0; j<ceil((double) weightMatrixCol/(double) param->numColSubArray); j++) {
 					int numRowMatrix = min(param->numRowSubArray, weightMatrixRow-i*param->numRowSubArray);
@@ -310,11 +317,16 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 						vector<vector<double> > subArrayInput;
 						subArrayInput = CopySubInput(inputVector, i*param->numRowSubArray, numInVector, numRowMatrix);
 						
+						printf("\t\tsubArray (%d,%d):\n", i, j);
+						printf("\t\tsubArrayMemory sizes: %d x %d \n", subArrayMemory.size(), subArrayMemory[0].size());
+						printf("\t\tsubArrayInput sizes: %d x %d \n", subArrayInput.size(), subArrayInput[0].size());
+
 						subArrayReadLatency = 0;
 						subArrayLatencyADC = 0;
 						subArrayLatencyAccum = 0;
 						subArrayLatencyOther = 0;
 
+						printf("\t\tnumInVector\t: %d\n", numInVector);
 						for (int k=0; k<numInVector; k++) {                 // calculate single subArray through the total input vectors
 							double activityRowRead = 0;
 							vector<double> input; 
@@ -349,6 +361,11 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 								*coreEnergyADC += subArray->readDynamicEnergyADC;
 								*coreEnergyAccum += subArray->readDynamicEnergyAccum;
 								*coreEnergyOther += subArray->readDynamicEnergyOther;
+								totalEnergy->PESubArray += subArray->readDynamicEnergy;
+								totalEnergy->PESubArrayStorage += subArray->readDynamicEnergyStorage;
+								totalEnergy->PESubArrayADC += subArray->readDynamicEnergyADC;
+								totalEnergy->PESubArrayAccum += subArray->readDynamicEnergyAccum;
+								totalEnergy->PESubArrayOther += subArray->readDynamicEnergyOther;
 							}
 						}
 						if (NMpe) {
@@ -360,6 +377,7 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 							*coreLatencyAccum = MAX(subArrayLatencyAccum + adderTreeNM->readLatency, (*coreLatencyAccum));
 							*coreLatencyOther = MAX(subArrayLatencyOther, (*coreLatencyOther));
 							*coreEnergyAccum += adderTreeNM->readDynamicEnergy;
+							totalEnergy->PEAccumulator += adderTreeNM->readDynamicEnergy;
 						} else {
 							adderTreeCM->CalculateLatency((int)(numInVector/param->numBitInput)*param->numColMuxed, ceil((double) weightMatrixRow/(double) param->numRowSubArray), 0);
 							adderTreeCM->CalculatePower((int)(numInVector/param->numBitInput)*param->numColMuxed, ceil((double) weightMatrixRow/(double) param->numRowSubArray));
@@ -369,6 +387,7 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 							*coreLatencyAccum = MAX(subArrayLatencyAccum + adderTreeCM->readLatency, (*coreLatencyAccum));
 							*coreLatencyOther = MAX(subArrayLatencyOther, (*coreLatencyOther));
 							*coreEnergyAccum += adderTreeCM->readDynamicEnergy;
+							totalEnergy->PEAccumulator += adderTreeCM->readDynamicEnergy;
 						}
 					}
 				}
@@ -379,11 +398,16 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 			*coreLatencyAccum = (*coreLatencyAccum)/(arrayDupRow*arrayDupCol);
 			*coreLatencyOther = (*coreLatencyOther)/(arrayDupRow*arrayDupCol);
 		} else {
+			printf("\t\tspecific subArray\n");
 			// assign weight and input to specific subArray
 			vector<vector<double> > subArrayMemory;
 			subArrayMemory = CopySubArray(newMemory, 0, 0, weightMatrixRow, weightMatrixCol);
 			vector<vector<double> > subArrayInput;
 			subArrayInput = CopySubInput(inputVector, 0, numInVector, weightMatrixRow);
+
+			printf("\t\tsubArray (%d,%d):\n", 0, 0);
+			printf("\t\tsubArrayMemory sizes: %d x %d \n", subArrayMemory.size(), subArrayMemory[0].size());
+			printf("\t\tsubArrayInput sizes: %d x %d \n", subArrayInput.size(), subArrayInput[0].size());
 
 			subArrayReadLatency = 0;
 			subArrayLatencyADC = 0;
@@ -424,6 +448,11 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 					*coreEnergyADC += subArray->readDynamicEnergyADC;
 					*coreEnergyAccum += subArray->readDynamicEnergyAccum;
 					*coreEnergyOther += subArray->readDynamicEnergyOther;
+					totalEnergy->PESubArray += subArray->readDynamicEnergy;
+					totalEnergy->PESubArrayStorage += subArray->readDynamicEnergyStorage;
+					totalEnergy->PESubArrayADC += subArray->readDynamicEnergyADC;
+					totalEnergy->PESubArrayAccum += subArray->readDynamicEnergyAccum;
+					totalEnergy->PESubArrayOther += subArray->readDynamicEnergyOther;
 				}
 			}
 			
@@ -434,6 +463,10 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 			*coreLatencyOther = subArrayLatencyOther/(arrayDupRow*arrayDupCol);
 		}
 	} else {
+		printf("\t\tnot duplicated\n");
+		printf("\t\t# subArr in row: %d\n", numSubArrayRow);
+		printf("\t\t# subArr in col: %d\n", numSubArrayCol);
+
 		// weight matrix is further partitioned inside PE (among subArray) --> no duplicated
 		for (int i=0; i<numSubArrayRow/*ceil((double) weightMatrixRow/(double) param->numRowSubArray)*/; i++) {
 			for (int j=0; j<numSubArrayCol/*ceil((double) weightMatrixCol/(double) param->numColSubArray)*/; j++) {
@@ -445,7 +478,11 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 					subArrayMemory = CopySubArray(newMemory, i*param->numRowSubArray, j*param->numColSubArray, numRowMatrix, numColMatrix);
 					vector<vector<double> > subArrayInput;
 					subArrayInput = CopySubInput(inputVector, i*param->numRowSubArray, numInVector, numRowMatrix);
-					
+
+					printf("\t\tsubArray (%d,%d):\n", i, j);
+					printf("\t\tsubArrayMemory sizes: %d x %d \n", subArrayMemory.size(), subArrayMemory[0].size());
+					printf("\t\tsubArrayInput sizes: %d x %d \n", subArrayInput.size(), subArrayInput[0].size());
+
 					subArrayReadLatency = 0;
 					subArrayLatencyADC = 0;
 					subArrayLatencyAccum = 0;
@@ -485,6 +522,11 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 							*coreEnergyADC += subArray->readDynamicEnergyADC;
 							*coreEnergyAccum += subArray->readDynamicEnergyAccum;
 							*coreEnergyOther += subArray->readDynamicEnergyOther;
+							totalEnergy->PESubArray += subArray->readDynamicEnergy;
+							totalEnergy->PESubArrayStorage += subArray->readDynamicEnergyStorage;
+							totalEnergy->PESubArrayADC += subArray->readDynamicEnergyADC;
+							totalEnergy->PESubArrayAccum += subArray->readDynamicEnergyAccum;
+							totalEnergy->PESubArrayOther += subArray->readDynamicEnergyOther;
 						}
 					}
 					*readLatency = MAX(subArrayReadLatency, (*readLatency));
@@ -501,6 +543,7 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 			*coreLatencyAccum += adderTreeNM->readLatency;
 			*readDynamicEnergy += adderTreeNM->readDynamicEnergy;
 			*coreEnergyAccum += adderTreeNM->readDynamicEnergy;
+			totalEnergy->PEAccumulator += adderTreeNM->readDynamicEnergy;
 		} else {
 			adderTreeCM->CalculateLatency((int)(numInVector/param->numBitInput)*param->numColMuxed, ceil((double) weightMatrixRow/(double) param->numRowSubArray), 0);
 			adderTreeCM->CalculatePower((int)(numInVector/param->numBitInput)*param->numColMuxed, ceil((double) weightMatrixRow/(double) param->numRowSubArray));
@@ -508,8 +551,8 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 			*coreLatencyAccum += adderTreeCM->readLatency;
 			*readDynamicEnergy += adderTreeCM->readDynamicEnergy;
 			*coreEnergyAccum += adderTreeCM->readDynamicEnergy;
+			totalEnergy->PEAccumulator += adderTreeCM->readDynamicEnergy;
 		}
-		
 	}
 	if(!CalculateclkFreq){
 		//considering buffer activation: no matter speedup or not, the total number of data transferred is fixed
@@ -539,6 +582,10 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 			*bufferDynamicEnergy += bufferInputNM->readDynamicEnergy + bufferOutputNM->readDynamicEnergy;
 			*icDynamicEnergy += busInputNM->readDynamicEnergy + busOutputNM->readDynamicEnergy;
 			*leakage = subArrayLeakage*numSubArrayRow*numSubArrayCol + adderTreeNM->leakage + bufferInputNM->leakage + bufferOutputNM->leakage;
+			
+			totalEnergy->PEInputBuffer += bufferInputNM->readDynamicEnergy;
+			totalEnergy->PEOutputBuffer += bufferOutputNM->readDynamicEnergy;
+			totalEnergy->PEBuffer += bufferInputNM->readDynamicEnergy + bufferOutputNM->readDynamicEnergy;
 		} else {
 			bufferInputCM->CalculateLatency(0, weightMatrixRow/param->numRowPerSynapse*numInVector/(bufferInputCM->numDff));
 			bufferOutputCM->CalculateLatency(0, weightMatrixCol/param->numColPerSynapse*adderTreeNM->numAdderBit*numInVector/param->numBitInput/(bufferOutputCM->numDff));
@@ -563,11 +610,16 @@ double ProcessingUnitCalculatePerformance(SubArray *subArray, const vector<vecto
 			*bufferDynamicEnergy += bufferInputCM->readDynamicEnergy + bufferOutputCM->readDynamicEnergy;
 			*icDynamicEnergy += busInputCM->readDynamicEnergy + busOutputCM->readDynamicEnergy;
 			*leakage = subArrayLeakage*numSubArrayRow*numSubArrayCol + adderTreeCM->leakage + bufferInputCM->leakage + bufferOutputCM->leakage;
+
+			totalEnergy->PEInputBuffer += bufferInputCM->readDynamicEnergy;
+			totalEnergy->PEOutputBuffer += bufferOutputCM->readDynamicEnergy;
+			totalEnergy->PEBuffer += bufferInputCM->readDynamicEnergy + bufferOutputCM->readDynamicEnergy;
 		}
 		*readLatency += (*bufferLatency) + (*icLatency);	
 		*readDynamicEnergy += (*bufferDynamicEnergy) + (*icDynamicEnergy);
 		*coreLatencyOther += (*bufferLatency) + (*icLatency);	
 		*coreEnergyOther += (*bufferDynamicEnergy) + (*icDynamicEnergy);		
+		totalEnergy->PEInterconnect += busInputCM->readDynamicEnergy + busOutputCM->readDynamicEnergy;
 	}
 }
 

@@ -950,6 +950,7 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 		readDynamicEnergy = 0;
 		writeDynamicEnergy = 0;
 		readDynamicEnergyArray = 0;
+		readDynamicEnergyStorage = 0;
 		
 		double numReadOperationPerRow;   // average value (can be non-integer for energy calculation)
 		if (numCol > numReadCellPerOperationNeuro)
@@ -997,6 +998,8 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				readDynamicEnergyADC = precharger.readDynamicEnergy + readDynamicEnergyArray + senseAmp.readDynamicEnergy;
 				readDynamicEnergyAccum = adder.readDynamicEnergy + dff.readDynamicEnergy + shiftAdd.readDynamicEnergy;
 				readDynamicEnergyOther = wlDecoder.readDynamicEnergy;
+
+				readDynamicEnergyStorage = readDynamicEnergyArray + writeDynamicEnergyArray + wlDecoder.readDynamicEnergy + precharger.readDynamicEnergy;
 
 				// Write
 				// writeDynamicEnergy += wlDecoder.writeDynamicEnergy;
@@ -1048,6 +1051,8 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				readDynamicEnergyAccum = shiftAdd.readDynamicEnergy;
 				readDynamicEnergyOther = wlSwitchMatrix.readDynamicEnergy + ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy + muxDecoder.readDynamicEnergy):0) )/numReadPulse;
 				
+				readDynamicEnergyStorage = readDynamicEnergyArray + writeDynamicEnergyArray + wlSwitchMatrix.readDynamicEnergy + precharger.readDynamicEnergy;
+
 				// Write
 				// writeDynamicEnergy += wlSwitchMatrix.writeDynamicEnergy;
 				// writeDynamicEnergy += precharger.writeDynamicEnergy;
@@ -1081,7 +1086,9 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				readDynamicEnergy += adder.readDynamicEnergy;
 				readDynamicEnergy += dff.readDynamicEnergy;
 				readDynamicEnergy += senseAmp.readDynamicEnergy;
-				
+
+				readDynamicEnergyStorage = readDynamicEnergyArray + writeDynamicEnergyArray + wlDecoder.readDynamicEnergy + precharger.readDynamicEnergy;
+
 				// Write				
 				// writeDynamicEnergy += wlDecoder.writeDynamicEnergy;
 				// writeDynamicEnergy += precharger.writeDynamicEnergy;
@@ -1118,6 +1125,8 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				readDynamicEnergy += multilevelSAEncoder.readDynamicEnergy;
 				readDynamicEnergy += sarADC.readDynamicEnergy;
 				
+				readDynamicEnergyStorage = readDynamicEnergyArray + writeDynamicEnergyArray + wlSwitchMatrix.readDynamicEnergy + precharger.readDynamicEnergy;
+
 				// Write				
 				// writeDynamicEnergy += wlSwitchMatrix.writeDynamicEnergy;
 				// writeDynamicEnergy += precharger.writeDynamicEnergy;
@@ -1184,6 +1193,8 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				readDynamicEnergyADC = readDynamicEnergyArray + multilevelSenseAmp.readDynamicEnergy + multilevelSAEncoder.readDynamicEnergy + sarADC.readDynamicEnergy;
 				readDynamicEnergyAccum = adder.readDynamicEnergy + dff.readDynamicEnergy + shiftAdd.readDynamicEnergy;
 				readDynamicEnergyOther = wlDecoder.readDynamicEnergy + wlNewDecoderDriver.readDynamicEnergy + wlDecoderDriver.readDynamicEnergy + ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy + muxDecoder.readDynamicEnergy):0) )/numReadPulse;
+
+				readDynamicEnergyStorage = readDynamicEnergyOther + readDynamicEnergyArray;
 
 				// Write					
 				// writeDynamicEnergyArray = writeDynamicEnergyArray;
@@ -1258,6 +1269,8 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				readDynamicEnergyAccum = shiftAdd.readDynamicEnergy;
 				readDynamicEnergyOther = wlNewSwitchMatrix.readDynamicEnergy + wlSwitchMatrix.readDynamicEnergy + ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy + muxDecoder.readDynamicEnergy):0) )/numReadPulse;
 				
+				readDynamicEnergyStorage = readDynamicEnergyOther + readDynamicEnergyArray;
+
 				// Write				
 				// writeDynamicEnergyArray = writeDynamicEnergyArray;
 				// writeDynamicEnergy = 0;
@@ -1319,6 +1332,12 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				readDynamicEnergy += adder.readDynamicEnergy;
 				readDynamicEnergy += dff.readDynamicEnergy;
 				readDynamicEnergy += readDynamicEnergyArray;
+
+				readDynamicEnergyStorage = readDynamicEnergyArray;
+				readDynamicEnergyStorage += wlDecoder.readDynamicEnergy;
+				readDynamicEnergyStorage += wlNewDecoderDriver.readDynamicEnergy;
+				readDynamicEnergyStorage += wlDecoderDriver.readDynamicEnergy;
+				readDynamicEnergyStorage += ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy + muxDecoder.readDynamicEnergy):0) )/numReadPulse;
 
 				// Write				
 				// writeDynamicEnergyArray = writeDynamicEnergyArray;
@@ -1383,6 +1402,11 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				readDynamicEnergy += multilevelSAEncoder.readDynamicEnergy;
 				readDynamicEnergy += readDynamicEnergyArray;
 				readDynamicEnergy += sarADC.readDynamicEnergy;
+
+				readDynamicEnergyStorage = readDynamicEnergyArray;
+				readDynamicEnergyStorage += wlNewSwitchMatrix.readDynamicEnergy;
+				readDynamicEnergyStorage += wlSwitchMatrix.readDynamicEnergy;
+				readDynamicEnergyStorage += ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy + muxDecoder.readDynamicEnergy):0) )/numReadPulse;
 
 				// Write				
 				// writeDynamicEnergyArray = writeDynamicEnergyArray;

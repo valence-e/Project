@@ -77,4 +77,31 @@ public:
 	double alpha, beta, gamma, delta, epsilon, zeta;
 };
 
+typedef struct TotalEnergy {
+	// Chip scope
+	double globalBuffer = 0;
+	double globalAccumulator = 0;
+	double globalActivation = 0;
+	double globalMaxPool = 0;
+	double globalInterconnect = 0;	// HTree
+	// Tile scope
+	double tileBuffer = 0;
+	double tileInputBuffer = 0;
+	double tileOutputBuffer = 0;
+	double tileAccumulator = 0;
+	double tileActivation = 0;
+	double tileInterconnect = 0;		// HTree
+	// PE Scope
+	double PEBuffer = 0;
+	double PEInputBuffer = 0;
+	double PEOutputBuffer = 0;
+	double PEAccumulator = 0;
+	double PEInterconnect = 0;		// Bus
+	double PESubArray = 0;
+	double PESubArrayADC = 0;
+	double PESubArrayAccum = 0;
+	double PESubArrayOther = 0;
+	double PESubArrayStorage = 0;
+} TotalEnergy;
+
 #endif

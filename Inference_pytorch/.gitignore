@@ -1,0 +1,4 @@
+*.pyc
+*.logs
+log/default/**
+layer_record_*

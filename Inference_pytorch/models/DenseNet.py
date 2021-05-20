@@ -129,7 +129,7 @@ def make_layers(cfg, args, logger):
 def densenet40(args, logger, pretrained=None):
     model = DenseNet(args, logger, depth=40, growth_rate=12, reduction=0.5, num_classes=10)
     if pretrained is not None:
-        model.load_state_dict(torch.load(pretrained))
+        model.load_state_dict(torch.load(pretrained, map_location='cpu'))
     return model
     
     
