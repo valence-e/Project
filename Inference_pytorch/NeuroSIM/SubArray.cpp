@@ -80,8 +80,10 @@ SubArray::SubArray(InputParameter& _inputParameter, Technology& _tech, MemCell& 
 	readDynamicEnergyArray = writeDynamicEnergyArray = 0;
 } 
 
-void SubArray::Initialize(int _numRow, int _numCol, double _unitWireRes){  //initialization module
+void SubArray::Initialize(int _numRow, int _numCol, double _unitWireRes, int _idX, int _idY){  //initialization module
 	
+	idX = _idX;
+	idY = _idY;
 	numRow = _numRow;    //import parameters
 	numCol = _numCol;
 	unitWireRes = _unitWireRes;
@@ -357,6 +359,14 @@ void SubArray::CalculateArea() {  //calculate layout area for total design
 				areaADC = senseAmp.area + precharger.area;
 				areaAccum = adder.area + dff.area + shiftAdd.area;
 				areaOther = wlDecoder.area + sramWriteDriver.area;
+
+				topPeripheralHeight = precharger.height + sramWriteDriver.height;
+				botPeripheralHeight = senseAmp.height + adder.height + dff.height + shiftAdd.height;
+				leftPeripheralWidth = wlDecoder.width;
+
+				topPeripheralArea = precharger.area + sramWriteDriver.area;
+				botPeripheralArea = senseAmp.area + adder.area + dff.area + shiftAdd.area;
+				leftPeripheralArea = wlDecoder.area;
 			} else if (conventionalParallel) { 
 				wlSwitchMatrix.CalculateArea(heightArray, NULL, NONE);
 				if (numColMuxed>1) {
@@ -384,6 +394,14 @@ void SubArray::CalculateArea() {  //calculate layout area for total design
 				areaADC = multilevelSenseAmp.area + precharger.area + multilevelSAEncoder.area + sarADC.area;
 				areaAccum = shiftAdd.area;
 				areaOther = wlSwitchMatrix.area + sramWriteDriver.area + ((numColMuxed > 1)==true? (mux.area + muxDecoder.area):0);
+
+				topPeripheralHeight = precharger.height + sramWriteDriver.height;
+				botPeripheralHeight = multilevelSenseAmp.height + multilevelSAEncoder.height + shiftAdd.height + ((numColMuxed > 1)==true? (mux.height):0)+sarADC.height;
+				leftPeripheralWidth = MAX(wlSwitchMatrix.width, ((numColMuxed > 1)==true? (muxDecoder.width):0));
+
+				topPeripheralArea = precharger.area + sramWriteDriver.area;
+				botPeripheralArea = multilevelSenseAmp.area + multilevelSAEncoder.area + shiftAdd.area + ((numColMuxed > 1)==true? (mux.area):0)+sarADC.area;
+				leftPeripheralArea = wlSwitchMatrix.area + ((numColMuxed > 1)==true? (muxDecoder.area):0);
 			} else if (BNNsequentialMode || XNORsequentialMode) {
 				wlDecoder.CalculateArea(heightArray, NULL, NONE);  
 				senseAmp.CalculateArea(NULL, widthArray, MAGIC);
@@ -394,6 +412,14 @@ void SubArray::CalculateArea() {  //calculate layout area for total design
 				area = height * width;
 				usedArea = areaArray + wlDecoder.area + precharger.area + sramWriteDriver.area + senseAmp.area + adder.area + dff.area + shiftAdd.area;
 				emptyArea = area - usedArea;
+
+				topPeripheralHeight = precharger.height + sramWriteDriver.height;
+				botPeripheralHeight = senseAmp.height + adder.height + dff.height + shiftAdd.height;
+				leftPeripheralWidth = wlDecoder.width;
+
+				topPeripheralArea = precharger.area + sramWriteDriver.area;
+				botPeripheralArea = senseAmp.area + adder.area + dff.area + shiftAdd.area;
+				leftPeripheralArea = wlDecoder.area;
 			} else if (BNNparallelMode || XNORparallelMode) {
 				wlSwitchMatrix.CalculateArea(heightArray, NULL, NONE);
 				if (SARADC) {
@@ -408,6 +434,14 @@ void SubArray::CalculateArea() {  //calculate layout area for total design
 				area = height * width;
 				usedArea = areaArray + wlSwitchMatrix.area + precharger.area + sramWriteDriver.area + multilevelSenseAmp.area + multilevelSAEncoder.area + sarADC.area;
 				emptyArea = area - usedArea;
+
+				topPeripheralHeight = precharger.height + sramWriteDriver.height;
+				botPeripheralHeight = multilevelSenseAmp.height + multilevelSAEncoder.height + sarADC.height;
+				leftPeripheralWidth = wlSwitchMatrix.width;
+
+				topPeripheralArea = precharger.area + sramWriteDriver.area;
+				botPeripheralArea = multilevelSenseAmp.area + multilevelSAEncoder.area + sarADC.area;
+				leftPeripheralArea = wlSwitchMatrix.area;
 			}
 			
 	    } else if (cell.memCellType == Type::RRAM || cell.memCellType == Type::FeFET) {
@@ -462,6 +496,14 @@ void SubArray::CalculateArea() {  //calculate layout area for total design
 				areaADC = multilevelSenseAmp.area + multilevelSAEncoder.area + sarADC.area;
 				areaAccum = adder.area + dff.area + shiftAdd.area;
 				areaOther = ((cell.writeVoltage > 1.5)==true? (wllevelshifter.area + bllevelshifter.area + sllevelshifter.area):0) + wlDecoder.area + wlNewDecoderDriver.area + wlDecoderDriver.area + slSwitchMatrix.area + ((numColMuxed > 1)==true? (mux.area + muxDecoder.area):0);
+
+				topPeripheralHeight = ((cell.writeVoltage > 1.5)==true? (sllevelshifter.height):0) + slSwitchMatrix.height;
+				botPeripheralHeight = ((numColMuxed > 1)==true? (mux.height):0) + multilevelSenseAmp.height + multilevelSAEncoder.height + adder.height + dff.height + shiftAdd.height + sarADC.height;
+				leftPeripheralWidth = MAX( ((cell.writeVoltage > 1.5)==true? (wllevelshifter.width + bllevelshifter.width):0) + wlDecoder.width + wlNewDecoderDriver.width + wlDecoderDriver.width, ((numColMuxed > 1)==true? (muxDecoder.width):0) );
+
+				topPeripheralArea = ((cell.writeVoltage > 1.5)==true? (sllevelshifter.area):0) + slSwitchMatrix.area;
+				botPeripheralArea = ((numColMuxed > 1)==true? (mux.area):0) + multilevelSenseAmp.area + multilevelSAEncoder.area + adder.area + dff.area + shiftAdd.area + sarADC.area;
+				leftPeripheralArea = ((cell.writeVoltage > 1.5)==true? (wllevelshifter.area + bllevelshifter.area):0) + wlDecoder.area + wlNewDecoderDriver.area + wlDecoderDriver.area + ((numColMuxed > 1)==true? (muxDecoder.area):0);
 			} else if (conventionalParallel) { 
 				if (cell.accessType == CMOS_access) {
 					wlNewSwitchMatrix.CalculateArea(heightArray, NULL, NONE);
@@ -496,6 +538,14 @@ void SubArray::CalculateArea() {  //calculate layout area for total design
 				
 				area = height * width;				
 				emptyArea = area - usedArea;
+
+				topPeripheralHeight = ((cell.writeVoltage > 1.5)==true? (sllevelshifter.height):0) + slSwitchMatrix.height;
+				botPeripheralHeight = ((numColMuxed > 1)==true? (mux.height):0) + multilevelSenseAmp.height + multilevelSAEncoder.height + shiftAdd.height + sarADC.height;
+				leftPeripheralWidth = MAX( ((cell.writeVoltage > 1.5)==true? (wllevelshifter.width + bllevelshifter.width):0) + wlNewSwitchMatrix.width + wlSwitchMatrix.width, ((numColMuxed > 1)==true? (muxDecoder.width):0));
+
+				topPeripheralArea = ((cell.writeVoltage > 1.5)==true? (sllevelshifter.area):0) + slSwitchMatrix.area;
+				botPeripheralArea = ((numColMuxed > 1)==true? (mux.area):0) + multilevelSenseAmp.area + multilevelSAEncoder.area + shiftAdd.area + sarADC.area;
+				leftPeripheralArea = ((cell.writeVoltage > 1.5)==true? (wllevelshifter.area + bllevelshifter.area):0) + wlNewSwitchMatrix.area + wlSwitchMatrix.area + ((numColMuxed > 1)==true? (muxDecoder.area):0);
 			} else if (BNNsequentialMode || XNORsequentialMode) {    
 				wlDecoder.CalculateArea(heightArray, NULL, NONE);
 				if (cell.accessType == CMOS_access) {
@@ -522,6 +572,16 @@ void SubArray::CalculateArea() {  //calculate layout area for total design
 				usedArea = areaArray + ((cell.writeVoltage > 1.5)==true? (wllevelshifter.area + bllevelshifter.area + sllevelshifter.area):0) + wlDecoder.area + wlDecoderDriver.area + wlNewDecoderDriver.area + slSwitchMatrix.area + 
 							((numColMuxed > 1)==true? (mux.area + muxDecoder.area):0) + rowCurrentSenseAmp.area  + adder.area + dff.area;
 				emptyArea = area - usedArea;
+
+				topPeripheralHeight = ((cell.writeVoltage > 1.5)==true? (sllevelshifter.height):0) + slSwitchMatrix.height;
+				botPeripheralHeight = ((numColMuxed > 1)==true? (mux.height):0) + rowCurrentSenseAmp.height + adder.height + dff.height;
+				leftPeripheralWidth = MAX( ((cell.writeVoltage > 1.5)==true? (wllevelshifter.width + bllevelshifter.width):0) + wlDecoder.width + wlNewDecoderDriver.width + wlDecoderDriver.width, ((numColMuxed > 1)==true? (muxDecoder.width):0));
+				peripheralArea = ((cell.writeVoltage > 1.5)==true? (wllevelshifter.area + bllevelshifter.area + sllevelshifter.area):0) + wlDecoder.area + wlDecoderDriver.area + wlNewDecoderDriver.area + slSwitchMatrix.area + 
+							((numColMuxed > 1)==true? (mux.area + muxDecoder.area):0) + rowCurrentSenseAmp.area  + adder.area + dff.area;
+
+				topPeripheralArea = ((cell.writeVoltage > 1.5)==true? (sllevelshifter.area):0) + slSwitchMatrix.area;
+				botPeripheralArea = ((numColMuxed > 1)==true? (mux.area):0) + rowCurrentSenseAmp.area + adder.area + dff.area;
+				leftPeripheralArea = ((cell.writeVoltage > 1.5)==true? (wllevelshifter.area + bllevelshifter.area):0) + wlDecoder.area + wlNewDecoderDriver.area + wlDecoderDriver.area + ((numColMuxed > 1)==true? (muxDecoder.area):0);
 			} else if (BNNparallelMode || XNORparallelMode) {      
 				if (cell.accessType == CMOS_access) {
 					wlNewSwitchMatrix.CalculateArea(heightArray, NULL, NONE);
@@ -549,9 +609,23 @@ void SubArray::CalculateArea() {  //calculate layout area for total design
 				usedArea = areaArray + ((cell.writeVoltage > 1.5)==true? (wllevelshifter.area + bllevelshifter.area + sllevelshifter.area):0) + wlSwitchMatrix.area + wlNewSwitchMatrix.area + slSwitchMatrix.area + 
 							mux.area + multilevelSenseAmp.area + muxDecoder.area + multilevelSAEncoder.area + sarADC.area;
 				emptyArea = area - usedArea;
+
+				topPeripheralHeight = ((cell.writeVoltage > 1.5)==true? (sllevelshifter.height):0) + slSwitchMatrix.height;
+				botPeripheralHeight = mux.height + multilevelSenseAmp.height + multilevelSAEncoder.height + sarADC.height;
+				leftPeripheralWidth = MAX( ((cell.writeVoltage > 1.5)==true? (wllevelshifter.width + bllevelshifter.width):0) + wlNewSwitchMatrix.width + wlSwitchMatrix.width, muxDecoder.width);
+
+				topPeripheralArea = ((cell.writeVoltage > 1.5)==true? (sllevelshifter.area):0) + slSwitchMatrix.area;
+				botPeripheralArea = mux.area + multilevelSenseAmp.area + multilevelSAEncoder.area + sarADC.area;
+				leftPeripheralArea = ((cell.writeVoltage > 1.5)==true? (wllevelshifter.area + bllevelshifter.area):0) + wlNewSwitchMatrix.area + wlSwitchMatrix.area + muxDecoder.area;
 			}
 		} 
+		peripheralArea = topPeripheralArea + botPeripheralArea + leftPeripheralArea;
 	}
+}
+
+void SubArray::ValidateArea() {
+	if (peripheralArea + areaArray != usedArea) cout << "Area Calculation Error" << endl;
+	else cout << "Area Validated" << endl;
 }
 
 void SubArray::CalculateLatency(double columnRes, const vector<double> &columnResistance, bool CalculateclkFreq) {   //calculate latency for different mode 

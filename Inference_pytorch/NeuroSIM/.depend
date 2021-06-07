@@ -1,3 +1,10 @@
+NewSubArray.o: NewSubArray.cpp constant.h formula.h Technology.h \
+ typedef.h NewSubArray.h InputParameter.h MemCell.h FunctionUnit.h \
+ Adder.h RowDecoder.h Mux.h WLDecoderOutput.h DFF.h DeMux.h Precharger.h \
+ SenseAmp.h DecoderDriver.h SRAMWriteDriver.h ReadCircuit.h \
+ SwitchMatrix.h ShiftAdd.h WLNewDecoderDriver.h NewSwitchMatrix.h \
+ CurrentSenseAmp.h MultilevelSenseAmp.h MultilevelSAEncoder.h SarADC.h \
+ SubArray.h LevelShifter.h Param.h
 ProcessingUnit.o: ProcessingUnit.cpp Bus.h typedef.h InputParameter.h \
  Technology.h MemCell.h FunctionUnit.h SubArray.h formula.h Adder.h \
  RowDecoder.h Mux.h WLDecoderOutput.h DFF.h DeMux.h Precharger.h \
@@ -42,7 +49,7 @@ main.o: main.cpp constant.h formula.h Technology.h typedef.h Param.h \
  DeMux.h Precharger.h SenseAmp.h DecoderDriver.h SRAMWriteDriver.h \
  ReadCircuit.h SwitchMatrix.h ShiftAdd.h WLNewDecoderDriver.h \
  NewSwitchMatrix.h CurrentSenseAmp.h MultilevelSenseAmp.h \
- MultilevelSAEncoder.h SarADC.h LevelShifter.h Definition.h
+ MultilevelSAEncoder.h SarADC.h LevelShifter.h NewSubArray.h Definition.h
 ShiftAdd.o: ShiftAdd.cpp constant.h formula.h Technology.h typedef.h \
  Param.h ShiftAdd.h InputParameter.h MemCell.h FunctionUnit.h Adder.h \
  DFF.h
@@ -60,13 +67,6 @@ AdderTree.o: AdderTree.cpp constant.h formula.h Technology.h typedef.h \
 FunctionUnit.o: FunctionUnit.cpp FunctionUnit.h
 Comparator.o: Comparator.cpp constant.h formula.h Technology.h typedef.h \
  Param.h Comparator.h InputParameter.h MemCell.h FunctionUnit.h
-SubArray.o: SubArray.cpp constant.h formula.h Technology.h typedef.h \
- SubArray.h InputParameter.h MemCell.h FunctionUnit.h Adder.h \
- RowDecoder.h Mux.h WLDecoderOutput.h DFF.h DeMux.h Precharger.h \
- SenseAmp.h DecoderDriver.h SRAMWriteDriver.h ReadCircuit.h \
- SwitchMatrix.h ShiftAdd.h WLNewDecoderDriver.h NewSwitchMatrix.h \
- CurrentSenseAmp.h MultilevelSenseAmp.h MultilevelSAEncoder.h SarADC.h \
- LevelShifter.h Param.h
 MultilevelSenseAmp.o: MultilevelSenseAmp.cpp constant.h formula.h \
  Technology.h typedef.h Param.h MultilevelSenseAmp.h InputParameter.h \
  MemCell.h FunctionUnit.h CurrentSenseAmp.h
@@ -107,6 +107,13 @@ SenseAmp.o: SenseAmp.cpp constant.h formula.h Technology.h typedef.h \
  SenseAmp.h InputParameter.h MemCell.h FunctionUnit.h
 WLDecoderOutput.o: WLDecoderOutput.cpp constant.h formula.h Technology.h \
  typedef.h WLDecoderOutput.h InputParameter.h MemCell.h FunctionUnit.h
+SubArray.o: SubArray.cpp constant.h formula.h Technology.h typedef.h \
+ SubArray.h InputParameter.h MemCell.h FunctionUnit.h Adder.h \
+ RowDecoder.h Mux.h WLDecoderOutput.h DFF.h DeMux.h Precharger.h \
+ SenseAmp.h DecoderDriver.h SRAMWriteDriver.h ReadCircuit.h \
+ SwitchMatrix.h ShiftAdd.h WLNewDecoderDriver.h NewSwitchMatrix.h \
+ CurrentSenseAmp.h MultilevelSenseAmp.h MultilevelSAEncoder.h SarADC.h \
+ LevelShifter.h Param.h
 ReadCircuit.o: ReadCircuit.cpp constant.h formula.h Technology.h \
  typedef.h ReadCircuit.h InputParameter.h MemCell.h FunctionUnit.h
 Buffer.o: Buffer.cpp constant.h formula.h Technology.h typedef.h Param.h \

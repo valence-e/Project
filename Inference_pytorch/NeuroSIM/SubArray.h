@@ -79,12 +79,15 @@ public:
 
 	/* Functions */
 	void PrintProperty();
-	void Initialize(int _numRow, int _numCol, double _unitWireRes);
+	void Initialize(int _numRow, int _numCol, double _unitWireRes, int _idX=0, int _idY=0);
 	void CalculateArea();
+	void ValidateArea();
 	void CalculateLatency(double _rampInput, const vector<double> &columnResistance, bool CalculateclkFreq);
 	void CalculatePower(const vector<double> &columnResistance);
 
 	/* Properties */	
+	int idX;
+	int idY;
 	bool initialized;	   // Initialization flag
 	int numRow;			   // Number of rows
 	int numCol;			   // Number of columns
@@ -160,6 +163,7 @@ public:
 
 	double areaADC, areaAccum, areaOther, readLatencyADC, readLatencyAccum, readLatencyOther, readDynamicEnergyADC, readDynamicEnergyAccum, readDynamicEnergyOther;
 	double readDynamicEnergyStorage;
+	double topPeripheralHeight, botPeripheralHeight, leftPeripheralWidth, topPeripheralArea, botPeripheralArea, leftPeripheralArea, peripheralArea;
 	
 	bool trainingEstimation, parallelTrans;
 	int levelOutputTrans, numRowMuxedTrans, numReadPulseTrans;
