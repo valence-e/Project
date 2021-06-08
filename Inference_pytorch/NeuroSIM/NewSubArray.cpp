@@ -68,9 +68,12 @@ void NewSubArray::Initialize(int _numRow, int _numCol, double _unitWireRes, int 
     BigArrayInitialize();
 
     subSubArray.reserve(numSubSubArrayRow*numSubSubArrayCol);
+    activeSubArray.reserve(numSubSubArrayRow*numSubSubArrayCol);
     for (int i = 0; i < numSubSubArrayRow; i++) {
         for (int j = 0; j < numSubSubArrayCol; j++) {
             subSubArray.push_back(SubArray(inputParameter, tech, cell));
+            activeSubArray.push_back(true);
+
             subSubArray[i*numSubSubArrayCol+j].XNORparallelMode = param->XNORparallelMode;               
             subSubArray[i*numSubSubArrayCol+j].XNORsequentialMode = param->XNORsequentialMode;             
             subSubArray[i*numSubSubArrayCol+j].BNNparallelMode = param->BNNparallelMode;                
@@ -103,7 +106,6 @@ void NewSubArray::Initialize(int _numRow, int _numCol, double _unitWireRes, int 
             subSubArray[i*numSubSubArrayCol+j].numReadCellPerOperationNeuro = numSubSubArrayCol;           // # of SRAM read cells in neuromorphic mode
             subSubArray[i*numSubSubArrayCol+j].numWriteCellPerOperationNeuro = numSubSubArrayCol;	       // For SRAM or analog RRAM in neuro mode
             subSubArray[i*numSubSubArrayCol+j].maxNumWritePulse = MAX(cell.maxNumLevelLTP, cell.maxNumLevelLTD);
-
         }
     }
 
@@ -177,23 +179,25 @@ void NewSubArray::CalculateLatency(double columnRes, const vector<double> &colum
 
     for (int i = 0; i < numSubSubArrayRow; i++) {
         for (int j = 0; j < numSubSubArrayCol; j++) {
-            subSubArray[i*numSubSubArrayCol+j].CalculateLatency(columnRes, columnResistance, CalculateclkFreq);
+            if (activeSubArray[i*numSubSubArrayCol+j]) {
+                subSubArray[i*numSubSubArrayCol+j].CalculateLatency(columnRes, columnResistance, CalculateclkFreq);
 
-            if (i == 0 && j == 0) subSubArray[i*numSubSubArrayCol+j].ValidateLatency();
+                if (i == 0 && j == 0) subSubArray[i*numSubSubArrayCol+j].ValidateLatency();
 
-            if (i == 0) { // First Row Includes Top Peripherals
-                topPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].topPeripheralLatency;
-            }
-            else if (i == numSubSubArrayRow-1) { // Last Row Includes Bottom Peripherals
-                botPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].botPeripheralLatency;
-                readLatencyADC += subSubArray[i*numSubSubArrayCol+j].readLatencyADC;
-                readLatencyAccum += subSubArray[i*numSubSubArrayCol+j].readLatencyAccum;
-            }
-            if (j == 0) { // First Column Includes Left Peripherals
-                leftPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].leftPeripheralLatency;
-            }
+                if (i == 0) { // First Row Includes Top Peripherals
+                    topPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].topPeripheralLatency;
+                }
+                else if (i == numSubSubArrayRow-1) { // Last Row Includes Bottom Peripherals
+                    botPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].botPeripheralLatency;
+                    readLatencyADC += subSubArray[i*numSubSubArrayCol+j].readLatencyADC;
+                    readLatencyAccum += subSubArray[i*numSubSubArrayCol+j].readLatencyAccum;
+                }
+                if (j == 0) { // First Column Includes Left Peripherals
+                    leftPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].leftPeripheralLatency;
+                }
 
-            arrayLatency += subSubArray[i*numSubSubArrayCol+j].arrayLatency;
+                arrayLatency += subSubArray[i*numSubSubArrayCol+j].arrayLatency;
+            }
         }
     }
 
@@ -226,26 +230,28 @@ void NewSubArray::CalculatePower(const vector<double> &columnResistance) {
 
     for (int i = 0; i < numSubSubArrayRow; i++) {
         for (int j = 0; j < numSubSubArrayCol; j++) {
-            subSubArray[i*numSubSubArrayCol+j].CalculatePower(columnResistance);
+            if (activeSubArray[i*numSubSubArrayCol+j]) {
+                subSubArray[i*numSubSubArrayCol+j].CalculatePower(columnResistance);
 
-            if (i == 0 && j == 0) subSubArray[i*numSubSubArrayCol+j].ValidatePower();
+                if (i == 0 && j == 0) subSubArray[i*numSubSubArrayCol+j].ValidatePower();
 
-            if (i == 0) { // First Row Includes Top Peripherals
-                topPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].topPeripheralLeakage;
-                topPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].topPeripheralReadDynamicEnergy;
-            }
-            else if (i == numSubSubArrayRow-1) { // Last Row Includes Bottom Peripherals
-                botPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].botPeripheralLeakage;
-                botPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].botPeripheralReadDynamicEnergy;
-            }
-            if (j == 0) { // First Column Includes Left Peripherals
-                leftPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].leftPeripheralLeakage;
-                leftPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].leftPeripheralReadDynamicEnergy;
-            }
+                if (i == 0) { // First Row Includes Top Peripherals
+                    topPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].topPeripheralLeakage;
+                    topPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].topPeripheralReadDynamicEnergy;
+                }
+                else if (i == numSubSubArrayRow-1) { // Last Row Includes Bottom Peripherals
+                    botPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].botPeripheralLeakage;
+                    botPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].botPeripheralReadDynamicEnergy;
+                }
+                if (j == 0) { // First Column Includes Left Peripherals
+                    leftPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].leftPeripheralLeakage;
+                    leftPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].leftPeripheralReadDynamicEnergy;
+                }
 
-            arrayLeakage += subSubArray[i*numSubSubArrayCol+j].arrayLeakage;
-            arrayReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].arrayReadDynamicEnergy;
-            arrayWriteDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].arrayWriteDynamicEnergy;
+                arrayLeakage += subSubArray[i*numSubSubArrayCol+j].arrayLeakage;
+                arrayReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].arrayReadDynamicEnergy;
+                arrayWriteDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].arrayWriteDynamicEnergy;
+            }
         }
     }
 

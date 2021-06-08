@@ -71,6 +71,8 @@
 using namespace std;
 
 class NewSubArray: public FunctionUnit {
+private:
+    void BigArrayInitialize();
 public:
 	NewSubArray(InputParameter& _inputParameter, Technology& _tech, MemCell& _cell);
 	virtual ~NewSubArray() {}
@@ -85,7 +87,6 @@ public:
 	void CalculateLatency(double _rampInput, const vector<double> &columnResistance, bool CalculateclkFreq);
 	void CalculatePower(const vector<double> &columnResistance);
     void PrintId();
-    void BigArrayInitialize();
 
 	/* Properties */
 	bool initialized;	   // Initialization flag
@@ -104,6 +105,7 @@ public:
 	double topPeripheralReadDynamicEnergy, botPeripheralReadDynamicEnergy, leftPeripheralReadDynamicEnergy;
 	double arrayReadDynamicEnergy, arrayWriteDynamicEnergy;
 	double readDynamicEnergyArray, writeDynamicEnergyArray;
+    vector<bool> activeSubArray;
 
     // From initial SubArray
 	int numColMuxed;
