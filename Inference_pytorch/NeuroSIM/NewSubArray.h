@@ -83,7 +83,7 @@ public:
 	void Initialize(int _numRow, int _numCol, double _unitWireRes, int _subSubArrayRow, int _subSubArrayCol);
 	void CalculateArea();
 	void CalculateLatency(double _rampInput, const vector<double> &columnResistance, bool CalculateclkFreq);
-	// void CalculatePower(const vector<double> &columnResistance);
+	void CalculatePower(const vector<double> &columnResistance);
     void PrintId();
 
 	/* Properties */	
@@ -104,6 +104,10 @@ public:
     double readLatencyADC, readLatencyAccum;
 	double topPeripheralLatency, botPeripheralLatency, leftPeripheralLatency, arrayLatency;
 
+	double topPeripheralLeakage, botPeripheralLeakage, leftPeripheralLeakage;
+	double arrayLeakage;
+	double topPeripheralReadDynamicEnergy, botPeripheralReadDynamicEnergy, leftPeripheralReadDynamicEnergy;
+	double arrayReadDynamicEnergy, arrayWriteDynamicEnergy;
 	double readDynamicEnergyArray, writeDynamicEnergyArray;
 
 	/* Circuit Modules */

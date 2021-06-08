@@ -1230,6 +1230,19 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 		readDynamicEnergyArray = 0;
 		readDynamicEnergyStorage = 0;
 		
+		topPeripheralLeakage = 0;
+		botPeripheralLeakage = 0;
+		leftPeripheralLeakage = 0;
+		arrayLeakage = 0;
+		topPeripheralReadDynamicEnergy = 0;
+		botPeripheralReadDynamicEnergy = 0;
+		leftPeripheralReadDynamicEnergy = 0;
+		arrayReadDynamicEnergy = 0;
+		topPeripheralWriteDynamicEnergy = 0;
+		botPeripheralWriteDynamicEnergy = 0;
+		leftPeripheralWriteDynamicEnergy = 0;
+		arrayWriteDynamicEnergy = 0;
+
 		double numReadOperationPerRow;   // average value (can be non-integer for energy calculation)
 		if (numCol > numReadCellPerOperationNeuro)
 			numReadOperationPerRow = numCol / numReadCellPerOperationNeuro;
@@ -1249,6 +1262,8 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 			leakage += CalculateGateLeakage(INV, 1, cell.widthSRAMCellNMOS * tech.featureSize,
 					cell.widthSRAMCellPMOS * tech.featureSize, inputParameter.temperature, tech) * tech.vdd * 2;
 			leakage *= numRow * numCol;
+
+			arrayLeakage += leakage;
 
 			if (conventionalSequential) {
 				wlDecoder.CalculatePower(numRow*activityRowRead, numRow*activityRowWrite);
@@ -1293,6 +1308,19 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				leakage += dff.leakage;
 				leakage += adder.leakage;
 				leakage += shiftAdd.leakage;
+
+				topPeripheralLeakage += precharger.leakage + sramWriteDriver.leakage;
+				botPeripheralLeakage += senseAmp.leakage + dff.leakage + adder.leakage + shiftAdd.leakage;
+				leftPeripheralLeakage += wlDecoder.leakage;
+
+				topPeripheralReadDynamicEnergy += precharger.readDynamicEnergy;
+				botPeripheralReadDynamicEnergy += senseAmp.readDynamicEnergy + adder.readDynamicEnergy + dff.readDynamicEnergy + shiftAdd.readDynamicEnergy;
+				leftPeripheralReadDynamicEnergy += wlDecoder.readDynamicEnergy;
+				arrayReadDynamicEnergy += readDynamicEnergyArray;
+				// topPeripheralWriteDynamicEnergy += ;
+				// botPeripheralWriteDynamicEnergy += ;
+				// leftPeripheralWriteDynamicEnergy += ;
+				arrayWriteDynamicEnergy += writeDynamicEnergyArray;
 
 			} else if (conventionalParallel) {
 				wlSwitchMatrix.CalculatePower(numColMuxed, 2*numWriteOperationPerRow*numRow*activityRowWrite, activityRowRead, activityColWrite);
@@ -1344,6 +1372,19 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				leakage += multilevelSenseAmp.leakage;
 				leakage += multilevelSAEncoder.leakage;
 				leakage += shiftAdd.leakage;
+
+				topPeripheralLeakage += precharger.leakage + sramWriteDriver.leakage;
+				botPeripheralLeakage += multilevelSenseAmp.leakage + multilevelSAEncoder.leakage + shiftAdd.leakage;
+				leftPeripheralLeakage += wlSwitchMatrix.leakage;
+
+				topPeripheralReadDynamicEnergy += precharger.readDynamicEnergy;
+				botPeripheralReadDynamicEnergy += multilevelSenseAmp.readDynamicEnergy + multilevelSAEncoder.readDynamicEnergy + shiftAdd.readDynamicEnergy + sarADC.readDynamicEnergy + ((numColMuxed > 1)==true? (mux.readDynamicEnergy/numReadPulse):0);
+				leftPeripheralReadDynamicEnergy += wlSwitchMatrix.readDynamicEnergy + ((numColMuxed > 1)==true? (muxDecoder.readDynamicEnergy/numReadPulse):0);
+				arrayReadDynamicEnergy += readDynamicEnergyArray;
+				// topPeripheralWriteDynamicEnergy += ;
+				// botPeripheralWriteDynamicEnergy += ;
+				// leftPeripheralWriteDynamicEnergy += ;
+				arrayWriteDynamicEnergy += writeDynamicEnergyArray;
 			
 			} else if (BNNsequentialMode || XNORsequentialMode) {
 				wlDecoder.CalculatePower(numRow*activityRowRead, numRow*activityRowWrite);
@@ -1380,7 +1421,20 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				leakage += senseAmp.leakage;
 				leakage += dff.leakage;
 				leakage += adder.leakage;
-				
+
+				topPeripheralLeakage += precharger.leakage + sramWriteDriver.leakage;
+				botPeripheralLeakage += senseAmp.leakage + dff.leakage + adder.leakage;
+				leftPeripheralLeakage += wlDecoder.leakage;
+
+				topPeripheralReadDynamicEnergy += precharger.readDynamicEnergy;
+				botPeripheralReadDynamicEnergy += adder.readDynamicEnergy + dff.readDynamicEnergy + senseAmp.readDynamicEnergy;
+				leftPeripheralReadDynamicEnergy += wlDecoder.readDynamicEnergy;
+				arrayReadDynamicEnergy += readDynamicEnergyArray;
+				// topPeripheralWriteDynamicEnergy += ;
+				// botPeripheralWriteDynamicEnergy += ;
+				// leftPeripheralWriteDynamicEnergy += ;
+				arrayWriteDynamicEnergy += writeDynamicEnergyArray;
+
 			} else if (BNNparallelMode || XNORparallelMode) {
 				wlSwitchMatrix.CalculatePower(numColMuxed, 2*numWriteOperationPerRow*numRow*activityRowWrite, activityRowRead, activityColWrite);
 				precharger.CalculatePower(numColMuxed, numWriteOperationPerRow*numRow*activityRowWrite);
@@ -1418,6 +1472,18 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				leakage += multilevelSenseAmp.leakage;
 				leakage += multilevelSAEncoder.leakage;
 				
+				topPeripheralLeakage += precharger.leakage + sramWriteDriver.leakage;
+				botPeripheralLeakage += multilevelSenseAmp.leakage + multilevelSAEncoder.leakage;
+				leftPeripheralLeakage += wlSwitchMatrix.leakage;
+
+				topPeripheralReadDynamicEnergy += precharger.readDynamicEnergy;
+				botPeripheralReadDynamicEnergy += multilevelSenseAmp.readDynamicEnergy + multilevelSAEncoder.readDynamicEnergy + sarADC.readDynamicEnergy;
+				leftPeripheralReadDynamicEnergy += wlSwitchMatrix.readDynamicEnergy;
+				arrayReadDynamicEnergy += readDynamicEnergyArray;
+				// topPeripheralWriteDynamicEnergy += ;
+				// botPeripheralWriteDynamicEnergy += ;
+				// leftPeripheralWriteDynamicEnergy += ;
+				arrayWriteDynamicEnergy += writeDynamicEnergyArray;
 			}		
 	    } else if (cell.memCellType == Type::RRAM || cell.memCellType == Type::FeFET) {
 			if (conventionalSequential) {
@@ -1502,7 +1568,19 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				leakage += dff.leakage;
 				leakage += adder.leakage;
 				leakage += shiftAdd.leakage;
-					
+
+				topPeripheralLeakage += slSwitchMatrix.leakage;
+				botPeripheralLeakage += ((numColMuxed > 1)==true? (mux.leakage):0) + multilevelSenseAmp.leakage + multilevelSAEncoder.leakage + dff.leakage + adder.leakage + shiftAdd.leakage;
+				leftPeripheralLeakage += wlDecoder.leakage + wlDecoderDriver.leakage + wlNewDecoderDriver.leakage + ((numColMuxed > 1)==true? (muxDecoder.leakage):0);
+
+				// topPeripheralReadDynamicEnergy += ;
+				botPeripheralReadDynamicEnergy += adder.readDynamicEnergy + dff.readDynamicEnergy + shiftAdd.readDynamicEnergy + multilevelSenseAmp.readDynamicEnergy + multilevelSAEncoder.readDynamicEnergy + sarADC.readDynamicEnergy + ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy):0) )/numReadPulse;
+				leftPeripheralReadDynamicEnergy += wlDecoder.readDynamicEnergy + wlNewDecoderDriver.readDynamicEnergy + wlDecoderDriver.readDynamicEnergy + ( ((numColMuxed > 1)==true? (muxDecoder.readDynamicEnergy):0) )/numReadPulse;
+				arrayReadDynamicEnergy += readDynamicEnergyArray;
+				// topPeripheralWriteDynamicEnergy += ;
+				// botPeripheralWriteDynamicEnergy += ;
+				// leftPeripheralWriteDynamicEnergy += ;
+				arrayWriteDynamicEnergy += writeDynamicEnergyArray;
 			} else if (conventionalParallel) {
 				double numReadCells = (int)ceil((double)numCol/numColMuxed);    // similar parameter as numReadCellPerOperationNeuro, which is for SRAM
 				int numWriteOperationPerRow = (int)ceil((double)numCol*activityColWrite/numWriteCellPerOperationNeuro);
@@ -1573,6 +1651,19 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				leakage += multilevelSenseAmp.leakage;
 				leakage += multilevelSAEncoder.leakage;
 				leakage += shiftAdd.leakage;
+
+				topPeripheralLeakage += slSwitchMatrix.leakage;
+				botPeripheralLeakage += ((numColMuxed > 1)==true? (mux.leakage):0) + multilevelSenseAmp.leakage + multilevelSAEncoder.leakage + shiftAdd.leakage;
+				leftPeripheralLeakage += wlSwitchMatrix.leakage + wlNewSwitchMatrix.leakage + ((numColMuxed > 1)==true? (muxDecoder.leakage):0);
+
+				// topPeripheralReadDynamicEnergy += ;
+				botPeripheralReadDynamicEnergy += ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy):0) )/numReadPulse + multilevelSenseAmp.readDynamicEnergy + multilevelSAEncoder.readDynamicEnergy + shiftAdd.readDynamicEnergy + sarADC.readDynamicEnergy;
+				leftPeripheralReadDynamicEnergy += wlNewSwitchMatrix.readDynamicEnergy + wlSwitchMatrix.readDynamicEnergy + ( ((numColMuxed > 1)==true? (muxDecoder.readDynamicEnergy):0) )/numReadPulse;
+				arrayReadDynamicEnergy += readDynamicEnergyArray;
+				// topPeripheralWriteDynamicEnergy += ;
+				// botPeripheralWriteDynamicEnergy += ;
+				// leftPeripheralWriteDynamicEnergy += ;
+				arrayWriteDynamicEnergy += writeDynamicEnergyArray;
 				
 			} else if (BNNsequentialMode || XNORsequentialMode) {
 				double numReadCells = (int)ceil((double)numCol/numColMuxed);    // similar parameter as numReadCellPerOperationNeuro, which is for SRAM
@@ -1643,7 +1734,20 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				leakage += rowCurrentSenseAmp.leakage;
 				leakage += dff.leakage;
 				leakage += adder.leakage;
-				
+
+				topPeripheralLeakage += slSwitchMatrix.leakage;
+				botPeripheralLeakage += ((numColMuxed > 1)==true? (mux.leakage):0) + rowCurrentSenseAmp.leakage + dff.leakage + adder.leakage;
+				leftPeripheralLeakage += wlDecoder.leakage + wlDecoderDriver.leakage + wlNewDecoderDriver.leakage + ((numColMuxed > 1)==true? (muxDecoder.leakage):0);
+
+				// topPeripheralReadDynamicEnergy += ;
+				botPeripheralReadDynamicEnergy += ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy):0) )/numReadPulse + rowCurrentSenseAmp.readDynamicEnergy + adder.readDynamicEnergy + dff.readDynamicEnergy;
+				leftPeripheralReadDynamicEnergy += wlDecoder.readDynamicEnergy + wlNewDecoderDriver.readDynamicEnergy + wlDecoderDriver.readDynamicEnergy + ( ((numColMuxed > 1)==true? (muxDecoder.readDynamicEnergy):0) )/numReadPulse;
+				arrayReadDynamicEnergy += readDynamicEnergyArray;
+				// topPeripheralWriteDynamicEnergy += ;
+				// botPeripheralWriteDynamicEnergy += ;
+				// leftPeripheralWriteDynamicEnergy += ;
+				arrayWriteDynamicEnergy += writeDynamicEnergyArray;
+
 			} else if (BNNparallelMode || XNORparallelMode) {
 				double numReadCells = (int)ceil((double)numCol/numColMuxed);    // similar parameter as numReadCellPerOperationNeuro, which is for SRAM
 				int numWriteOperationPerRow = (int)ceil((double)numCol*activityColWrite/numWriteCellPerOperationNeuro);
@@ -1710,9 +1814,36 @@ void SubArray::CalculatePower(const vector<double> &columnResistance) {
 				leakage += multilevelSenseAmp.leakage;
 				leakage += multilevelSAEncoder.leakage;
 
+				topPeripheralLeakage += slSwitchMatrix.leakage;
+				botPeripheralLeakage += ((numColMuxed > 1)==true? (mux.leakage):0) + multilevelSenseAmp.leakage + multilevelSAEncoder.leakage;
+				leftPeripheralLeakage += wlSwitchMatrix.leakage + wlNewSwitchMatrix.leakage + ((numColMuxed > 1)==true? (muxDecoder.leakage):0);
+
+				// topPeripheralReadDynamicEnergy += ;
+				botPeripheralReadDynamicEnergy += ( ((numColMuxed > 1)==true? (mux.readDynamicEnergy):0) )/numReadPulse + multilevelSenseAmp.readDynamicEnergy + multilevelSAEncoder.readDynamicEnergy + sarADC.readDynamicEnergy;
+				leftPeripheralReadDynamicEnergy += wlNewSwitchMatrix.readDynamicEnergy + wlSwitchMatrix.readDynamicEnergy + ( ((numColMuxed > 1)==true? (muxDecoder.readDynamicEnergy):0) )/numReadPulse;
+				arrayReadDynamicEnergy += readDynamicEnergyArray;
+				// topPeripheralWriteDynamicEnergy += ;
+				// botPeripheralWriteDynamicEnergy += ;
+				// leftPeripheralWriteDynamicEnergy += ;
+				arrayWriteDynamicEnergy += writeDynamicEnergyArray;
 			}
 		} 
 	}
+}
+
+void SubArray::ValidatePower() {
+	// Leakage
+	double newLeakage = leftPeripheralLeakage + topPeripheralLeakage + botPeripheralLeakage;
+	if ((newLeakage + arrayLeakage) != leakage) cout << "Leakage Calculation Error" << endl;
+	else cout << "Leakage Validated" << endl;
+	// ReadDynamicEnergy
+	double newReadDynamicEnergy = leftPeripheralReadDynamicEnergy + topPeripheralReadDynamicEnergy + botPeripheralReadDynamicEnergy;
+	if ((newReadDynamicEnergy + arrayReadDynamicEnergy) != readDynamicEnergy) cout << "Read Dynamic Energy Calculation Error" << endl;
+	else cout << "Read Dynamic Energy Validated" << endl;
+	// WriteDynamicEnergy
+	double newWriteDynamicEnergy = leftPeripheralWriteDynamicEnergy + topPeripheralWriteDynamicEnergy + botPeripheralWriteDynamicEnergy;
+	if ((newWriteDynamicEnergy + arrayWriteDynamicEnergy) != writeDynamicEnergy) cout << "Write Dynamic Energy Calculation Error" << endl;
+	else cout << "Write Dynamic Energy Validated" << endl;
 }
 
 void SubArray::PrintProperty() {

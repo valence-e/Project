@@ -85,6 +85,7 @@ public:
 	void CalculateLatency(double _rampInput, const vector<double> &columnResistance, bool CalculateclkFreq);
 	void ValidateLatency();
 	void CalculatePower(const vector<double> &columnResistance);
+	void ValidatePower();
 
 	/* Properties */	
 	int idX;
@@ -166,6 +167,10 @@ public:
 	double readDynamicEnergyStorage;
 	double topPeripheralHeight, botPeripheralHeight, leftPeripheralWidth, topPeripheralArea, botPeripheralArea, leftPeripheralArea, peripheralArea;
 	double topPeripheralLatency, botPeripheralLatency, leftPeripheralLatency, arrayLatency;
+
+	double topPeripheralLeakage, botPeripheralLeakage, leftPeripheralLeakage, arrayLeakage;
+	double topPeripheralReadDynamicEnergy, botPeripheralReadDynamicEnergy, leftPeripheralReadDynamicEnergy, arrayReadDynamicEnergy;
+	double topPeripheralWriteDynamicEnergy, botPeripheralWriteDynamicEnergy, leftPeripheralWriteDynamicEnergy, arrayWriteDynamicEnergy;
 	
 	bool trainingEstimation, parallelTrans;
 	int levelOutputTrans, numRowMuxedTrans, numReadPulseTrans;

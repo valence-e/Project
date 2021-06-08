@@ -234,9 +234,61 @@ void NewSubArray::CalculateLatency(double columnRes, const vector<double> &colum
     readLatency += arrayLatency;
 }
 
-// void NewSubArray::CalculatePower(const vector<double> &columnResistance) {
+void NewSubArray::CalculatePower(const vector<double> &columnResistance) {
+    leakage = 0;
+    readDynamicEnergy = 0;
+    writeDynamicEnergy = 0;
 
-// }
+    topPeripheralLeakage = 0;
+    botPeripheralLeakage = 0;
+    leftPeripheralLeakage = 0;
+    arrayLeakage = 0;
+
+    topPeripheralReadDynamicEnergy = 0;
+    botPeripheralReadDynamicEnergy = 0;
+    leftPeripheralReadDynamicEnergy = 0;
+    arrayReadDynamicEnergy = 0;
+    arrayWriteDynamicEnergy = 0;
+
+    for (int i = 0; i < numSubSubArrayRow; i++) {
+        for (int j = 0; j < numSubSubArrayCol; j++) {
+            subSubArray[i*numSubSubArrayCol+j].CalculatePower(columnResistance);
+
+            if (i == 0 && j == 0) subSubArray[i*numSubSubArrayCol+j].ValidatePower();
+
+            if (i == 0) { // First Row Includes Top Peripherals
+                topPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].topPeripheralLeakage;
+                topPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].topPeripheralReadDynamicEnergy;
+            }
+            else if (i == numSubSubArrayRow-1) { // Last Row Includes Bottom Peripherals
+                botPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].botPeripheralLeakage;
+                botPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].botPeripheralReadDynamicEnergy;
+            }
+            if (j == 0) { // First Column Includes Left Peripherals
+                leftPeripheralLeakage += subSubArray[i*numSubSubArrayCol+j].leftPeripheralLeakage;
+                leftPeripheralReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].leftPeripheralReadDynamicEnergy;
+            }
+
+            arrayLeakage += subSubArray[i*numSubSubArrayCol+j].arrayLeakage;
+            arrayReadDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].arrayReadDynamicEnergy;
+            arrayWriteDynamicEnergy += subSubArray[i*numSubSubArrayCol+j].arrayWriteDynamicEnergy;
+        }
+    }
+
+    readDynamicEnergyArray = arrayReadDynamicEnergy;
+    writeDynamicEnergyArray = arrayWriteDynamicEnergy;
+
+    leakage += topPeripheralLeakage;
+    leakage += botPeripheralLeakage;
+    leakage += leftPeripheralLeakage;
+    leakage += arrayLeakage;
+
+    readDynamicEnergy += topPeripheralReadDynamicEnergy;
+    readDynamicEnergy += botPeripheralReadDynamicEnergy;
+    readDynamicEnergy += leftPeripheralReadDynamicEnergy;
+    readDynamicEnergy += arrayReadDynamicEnergy;
+    writeDynamicEnergy += arrayWriteDynamicEnergy;
+}
 
 // void NewSubArray::PrintProperty() {
 

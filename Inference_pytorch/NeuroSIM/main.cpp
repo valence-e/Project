@@ -197,6 +197,7 @@ int main(int argc, char * argv[]) {
 	vector<double> columnResistance;
 	columnResistance = GetColumnResistance(input, subArrayMemory, cell, param->parallelRead, subArray->resCellAccess);
 	subArray->CalculateLatency(1e20, columnResistance, false);
+	subArray->CalculatePower(columnResistance);
 }
 // 	auto start = chrono::high_resolution_clock::now();
 	
