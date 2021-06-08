@@ -65,43 +65,7 @@ void NewSubArray::Initialize(int _numRow, int _numCol, double _unitWireRes, int 
     numSubSubArrayRow = numRow/subSubArrayRow;
     numSubSubArrayCol = numCol/subSubArrayCol;
 
-    SubArray *bigArray = new SubArray(inputParameter, tech, cell);
-    bigArray->XNORparallelMode = param->XNORparallelMode;               
-    bigArray->XNORsequentialMode = param->XNORsequentialMode;             
-    bigArray->BNNparallelMode = param->BNNparallelMode;                
-    bigArray->BNNsequentialMode = param->BNNsequentialMode;              
-    bigArray->conventionalParallel = param->conventionalParallel;                  
-    bigArray->conventionalSequential = param->conventionalSequential;                 
-    bigArray->numRow = numRow;
-    bigArray->numCol = numCol;
-    bigArray->levelOutput = param->levelOutput;
-    bigArray->numColMuxed = param->numColMuxed;               // How many columns share 1 read circuit (for neuro mode with analog RRAM) or 1 S/A (for memory mode or neuro mode with digital RRAM)
-    bigArray->clkFreq = param->clkFreq;                       // Clock frequency
-    bigArray->relaxArrayCellHeight = param->relaxArrayCellHeight;
-    bigArray->relaxArrayCellWidth = param->relaxArrayCellWidth;
-    bigArray->numReadPulse = param->numBitInput;
-    bigArray->avgWeightBit = param->cellBit;
-    bigArray->numCellPerSynapse = param->numColPerSynapse;
-    bigArray->SARADC = param->SARADC;
-    bigArray->currentMode = param->currentMode;
-    bigArray->validated = param->validated;
-    bigArray->spikingMode = NONSPIKING;
-
-    if (bigArray->numColMuxed > numCol) {                      // Set the upperbound of numColMuxed
-        bigArray->numColMuxed = numCol;
-    }
-
-    bigArray->numReadCellPerOperationFPGA = numCol;	           // Not relevant for IMEC
-    bigArray->numWriteCellPerOperationFPGA = numCol;	       // Not relevant for IMEC
-    bigArray->numReadCellPerOperationMemory = numCol;          // Define # of SRAM read cells in memory mode because SRAM does not have S/A sharing (not relevant for IMEC)
-    bigArray->numWriteCellPerOperationMemory = numCol/8;       // # of write cells per operation in SRAM memory or the memory mode of multifunctional memory (not relevant for IMEC)
-    bigArray->numReadCellPerOperationNeuro = numCol;           // # of SRAM read cells in neuromorphic mode
-    bigArray->numWriteCellPerOperationNeuro = numCol;	       // For SRAM or analog RRAM in neuro mode
-    bigArray->maxNumWritePulse = MAX(cell.maxNumLevelLTP, cell.maxNumLevelLTD);
-    bigArray->Initialize(numRow, numCol, unitWireRes, 0, 0);
-
-    resCellAccess = bigArray->resCellAccess;
-    capCellAccess = bigArray->capCellAccess;
+    BigArrayInitialize();
 
     subSubArray.reserve(numSubSubArrayRow*numSubSubArrayCol);
     for (int i = 0; i < numSubSubArrayRow; i++) {
@@ -193,6 +157,11 @@ void NewSubArray::CalculateArea() {  //calculate layout area for total design
     areaArray = heightArray * widthArray;
     area = height * width;
     emptyArea = area - usedArea;
+
+    bigArray->CalculateArea();
+    areaADC = bigArray->areaADC;
+    areaAccum = bigArray->areaAccum;
+    areaOther = bigArray->areaOther;
 }
 
 void NewSubArray::CalculateLatency(double columnRes, const vector<double> &columnResistance, bool CalculateclkFreq) {   //calculate latency for different mode 
@@ -232,6 +201,11 @@ void NewSubArray::CalculateLatency(double columnRes, const vector<double> &colum
     readLatency += botPeripheralLatency;
     readLatency += leftPeripheralLatency;
     readLatency += arrayLatency;
+
+    bigArray->CalculateLatency(columnRes, columnResistance, CalculateclkFreq);
+    readLatencyADC = bigArray->readLatencyADC;
+    readLatencyAccum = bigArray->readLatencyAccum;
+    readLatencyOther = bigArray->readLatencyOther;
 }
 
 void NewSubArray::CalculatePower(const vector<double> &columnResistance) {
@@ -288,9 +262,122 @@ void NewSubArray::CalculatePower(const vector<double> &columnResistance) {
     readDynamicEnergy += leftPeripheralReadDynamicEnergy;
     readDynamicEnergy += arrayReadDynamicEnergy;
     writeDynamicEnergy += arrayWriteDynamicEnergy;
+    
+    bigArray->CalculatePower(columnResistance);
+    readDynamicEnergyADC = bigArray->readDynamicEnergyADC;
+    readDynamicEnergyAccum = bigArray->readDynamicEnergyAccum;
+    readDynamicEnergyOther = bigArray->readDynamicEnergyOther;
+    readDynamicEnergyStorage = bigArray->readDynamicEnergyStorage;
 }
 
 // void NewSubArray::PrintProperty() {
 
 // }
 
+void NewSubArray::BigArrayInitialize() {
+    bigArray = new SubArray(inputParameter, tech, cell);
+    bigArray->XNORparallelMode = param->XNORparallelMode;               
+    bigArray->XNORsequentialMode = param->XNORsequentialMode;             
+    bigArray->BNNparallelMode = param->BNNparallelMode;                
+    bigArray->BNNsequentialMode = param->BNNsequentialMode;              
+    bigArray->conventionalParallel = param->conventionalParallel;                  
+    bigArray->conventionalSequential = param->conventionalSequential;                 
+    bigArray->numRow = numRow;
+    bigArray->numCol = numCol;
+    bigArray->levelOutput = param->levelOutput;
+    bigArray->numColMuxed = param->numColMuxed;               // How many columns share 1 read circuit (for neuro mode with analog RRAM) or 1 S/A (for memory mode or neuro mode with digital RRAM)
+    bigArray->clkFreq = param->clkFreq;                       // Clock frequency
+    bigArray->relaxArrayCellHeight = param->relaxArrayCellHeight;
+    bigArray->relaxArrayCellWidth = param->relaxArrayCellWidth;
+    bigArray->numReadPulse = param->numBitInput;
+    bigArray->avgWeightBit = param->cellBit;
+    bigArray->numCellPerSynapse = param->numColPerSynapse;
+    bigArray->SARADC = param->SARADC;
+    bigArray->currentMode = param->currentMode;
+    bigArray->validated = param->validated;
+    bigArray->spikingMode = NONSPIKING;
+
+    if (bigArray->numColMuxed > numCol) {                      // Set the upperbound of numColMuxed
+        bigArray->numColMuxed = numCol;
+    }
+
+    bigArray->numReadCellPerOperationFPGA = numCol;	           // Not relevant for IMEC
+    bigArray->numWriteCellPerOperationFPGA = numCol;	       // Not relevant for IMEC
+    bigArray->numReadCellPerOperationMemory = numCol;          // Define # of SRAM read cells in memory mode because SRAM does not have S/A sharing (not relevant for IMEC)
+    bigArray->numWriteCellPerOperationMemory = numCol/8;       // # of write cells per operation in SRAM memory or the memory mode of multifunctional memory (not relevant for IMEC)
+    bigArray->numReadCellPerOperationNeuro = numCol;           // # of SRAM read cells in neuromorphic mode
+    bigArray->numWriteCellPerOperationNeuro = numCol;	       // For SRAM or analog RRAM in neuro mode
+    bigArray->maxNumWritePulse = MAX(cell.maxNumLevelLTP, cell.maxNumLevelLTD);
+    bigArray->Initialize(numRow, numCol, unitWireRes, 0, 0);
+
+    numColMuxed = bigArray->numColMuxed;
+    numWriteColMuxed = bigArray->numWriteColMuxed;
+    totalNumWritePulse = bigArray->totalNumWritePulse;
+    numWritePulseAVG = bigArray->numWritePulseAVG;
+    writeLatencyArray = bigArray->writeLatencyArray;
+
+    lengthRow = bigArray->lengthRow;
+    lengthCol = bigArray->lengthCol;
+    capRow1 = bigArray->capRow1;
+    capRow2 = bigArray->capRow2;
+    capCol = bigArray->capCol;
+    resRow = bigArray->resRow;
+    resCol = bigArray->resCol;
+    resCellAccess = bigArray->resCellAccess;
+    capCellAccess = bigArray->capCellAccess;
+    colDelay = bigArray->colDelay;
+
+    activityRowWrite = bigArray->activityRowWrite;
+    activityColWrite = bigArray->activityColWrite;
+    activityRowRead = bigArray->activityRowRead;
+    activityColRead = bigArray->activityColRead;
+    numReadPulse = bigArray->numReadPulse;
+    numWritePulse = bigArray->numWritePulse;
+    maxNumWritePulse = bigArray->maxNumWritePulse;
+    maxNumIntBit = bigArray->maxNumIntBit;
+
+    neuro = bigArray->neuro;
+    neuroSimReadSimulation = bigArray->neuroSimReadSimulation;
+    multifunctional = bigArray->multifunctional;
+    conventionalSequential = bigArray->conventionalSequential;
+    conventionalParallel = bigArray->conventionalParallel;
+    BNNsequentialMode = bigArray->BNNsequentialMode;
+    BNNparallelMode = bigArray->BNNparallelMode;
+    XNORsequentialMode = bigArray->XNORsequentialMode;
+    XNORparallelMode = bigArray->XNORparallelMode;
+    SARADC = bigArray->SARADC;
+    currentMode = bigArray->currentMode;
+    validated = bigArray->validated;
+
+    levelOutput = bigArray->levelOutput;
+
+    readCircuitMode = bigArray->readCircuitMode;
+    numWriteCellPerOperationFPGA = bigArray->numWriteCellPerOperationFPGA;
+    numWriteCellPerOperationMemory = bigArray->numWriteCellPerOperationMemory;
+    numWriteCellPerOperationNeuro = bigArray->numWriteCellPerOperationNeuro;
+    clkFreq = bigArray->clkFreq;
+    avgWeightBit = bigArray->avgWeightBit;
+    numCellPerSynapse = bigArray->numCellPerSynapse;
+    numReadCellPerOperationFPGA = bigArray->numReadCellPerOperationFPGA;
+    numReadCellPerOperationMemory = bigArray->numReadCellPerOperationMemory;
+    numReadCellPerOperationNeuro = bigArray->numReadCellPerOperationNeuro;
+    parallelWrite = bigArray->parallelWrite;
+    FPGA = bigArray->FPGA;
+    LUT_dynamic = bigArray->LUT_dynamic;
+    backToBack = bigArray->backToBack;
+    numLut = bigArray->numLut;
+
+    numReadLutPerOperationFPGA = bigArray->numReadLutPerOperationFPGA;
+    spikingMode = bigArray->spikingMode;
+
+    shiftAddEnable = bigArray->shiftAddEnable;
+
+    relaxArrayCellHeight = bigArray->relaxArrayCellHeight;
+    relaxArrayCellWidth = bigArray->relaxArrayCellWidth;
+
+    trainingEstimation = bigArray->trainingEstimation;
+    parallelTrans = bigArray->parallelTrans;
+    levelOutputTrans = bigArray->levelOutputTrans;
+    numRowMuxedTrans = bigArray->numRowMuxedTrans;
+    numReadPulseTrans = bigArray->numReadPulseTrans;
+}
