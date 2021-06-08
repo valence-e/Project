@@ -65,6 +65,44 @@ void NewSubArray::Initialize(int _numRow, int _numCol, double _unitWireRes, int 
     numSubSubArrayRow = numRow/subSubArrayRow;
     numSubSubArrayCol = numCol/subSubArrayCol;
 
+    SubArray *bigArray = new SubArray(inputParameter, tech, cell);
+    bigArray->XNORparallelMode = param->XNORparallelMode;               
+    bigArray->XNORsequentialMode = param->XNORsequentialMode;             
+    bigArray->BNNparallelMode = param->BNNparallelMode;                
+    bigArray->BNNsequentialMode = param->BNNsequentialMode;              
+    bigArray->conventionalParallel = param->conventionalParallel;                  
+    bigArray->conventionalSequential = param->conventionalSequential;                 
+    bigArray->numRow = numRow;
+    bigArray->numCol = numCol;
+    bigArray->levelOutput = param->levelOutput;
+    bigArray->numColMuxed = param->numColMuxed;               // How many columns share 1 read circuit (for neuro mode with analog RRAM) or 1 S/A (for memory mode or neuro mode with digital RRAM)
+    bigArray->clkFreq = param->clkFreq;                       // Clock frequency
+    bigArray->relaxArrayCellHeight = param->relaxArrayCellHeight;
+    bigArray->relaxArrayCellWidth = param->relaxArrayCellWidth;
+    bigArray->numReadPulse = param->numBitInput;
+    bigArray->avgWeightBit = param->cellBit;
+    bigArray->numCellPerSynapse = param->numColPerSynapse;
+    bigArray->SARADC = param->SARADC;
+    bigArray->currentMode = param->currentMode;
+    bigArray->validated = param->validated;
+    bigArray->spikingMode = NONSPIKING;
+
+    if (bigArray->numColMuxed > numCol) {                      // Set the upperbound of numColMuxed
+        bigArray->numColMuxed = numCol;
+    }
+
+    bigArray->numReadCellPerOperationFPGA = numCol;	           // Not relevant for IMEC
+    bigArray->numWriteCellPerOperationFPGA = numCol;	       // Not relevant for IMEC
+    bigArray->numReadCellPerOperationMemory = numCol;          // Define # of SRAM read cells in memory mode because SRAM does not have S/A sharing (not relevant for IMEC)
+    bigArray->numWriteCellPerOperationMemory = numCol/8;       // # of write cells per operation in SRAM memory or the memory mode of multifunctional memory (not relevant for IMEC)
+    bigArray->numReadCellPerOperationNeuro = numCol;           // # of SRAM read cells in neuromorphic mode
+    bigArray->numWriteCellPerOperationNeuro = numCol;	       // For SRAM or analog RRAM in neuro mode
+    bigArray->maxNumWritePulse = MAX(cell.maxNumLevelLTP, cell.maxNumLevelLTD);
+    bigArray->Initialize(numRow, numCol, unitWireRes, 0, 0);
+
+    resCellAccess = bigArray->resCellAccess;
+    capCellAccess = bigArray->capCellAccess;
+
     subSubArray.reserve(numSubSubArrayRow*numSubSubArrayCol);
     for (int i = 0; i < numSubSubArrayRow; i++) {
         for (int j = 0; j < numSubSubArrayCol; j++) {
@@ -75,8 +113,8 @@ void NewSubArray::Initialize(int _numRow, int _numCol, double _unitWireRes, int 
             subSubArray[i*numSubSubArrayCol+j].BNNsequentialMode = param->BNNsequentialMode;              
             subSubArray[i*numSubSubArrayCol+j].conventionalParallel = param->conventionalParallel;                  
             subSubArray[i*numSubSubArrayCol+j].conventionalSequential = param->conventionalSequential;                 
-            subSubArray[i*numSubSubArrayCol+j].numRow = numRow;
-            subSubArray[i*numSubSubArrayCol+j].numCol = numCol;
+            subSubArray[i*numSubSubArrayCol+j].numRow = numSubSubArrayRow;
+            subSubArray[i*numSubSubArrayCol+j].numCol = numSubSubArrayCol;
             subSubArray[i*numSubSubArrayCol+j].levelOutput = param->levelOutput;
             subSubArray[i*numSubSubArrayCol+j].numColMuxed = param->numColMuxed;               // How many columns share 1 read circuit (for neuro mode with analog RRAM) or 1 S/A (for memory mode or neuro mode with digital RRAM)
             subSubArray[i*numSubSubArrayCol+j].clkFreq = param->clkFreq;                       // Clock frequency
@@ -90,16 +128,16 @@ void NewSubArray::Initialize(int _numRow, int _numCol, double _unitWireRes, int 
             subSubArray[i*numSubSubArrayCol+j].validated = param->validated;
             subSubArray[i*numSubSubArrayCol+j].spikingMode = NONSPIKING;
 
-            if (subSubArray[i*numSubSubArrayCol+j].numColMuxed > numCol) {                      // Set the upperbound of numColMuxed
-                subSubArray[i*numSubSubArrayCol+j].numColMuxed = numCol;
+            if (subSubArray[i*numSubSubArrayCol+j].numColMuxed > numSubSubArrayRow) {                      // Set the upperbound of numColMuxed
+                subSubArray[i*numSubSubArrayCol+j].numColMuxed = numSubSubArrayCol;
             }
 
-            subSubArray[i*numSubSubArrayCol+j].numReadCellPerOperationFPGA = numCol;	           // Not relevant for IMEC
-            subSubArray[i*numSubSubArrayCol+j].numWriteCellPerOperationFPGA = numCol;	       // Not relevant for IMEC
-            subSubArray[i*numSubSubArrayCol+j].numReadCellPerOperationMemory = numCol;          // Define # of SRAM read cells in memory mode because SRAM does not have S/A sharing (not relevant for IMEC)
-            subSubArray[i*numSubSubArrayCol+j].numWriteCellPerOperationMemory = numCol/8;       // # of write cells per operation in SRAM memory or the memory mode of multifunctional memory (not relevant for IMEC)
-            subSubArray[i*numSubSubArrayCol+j].numReadCellPerOperationNeuro = numCol;           // # of SRAM read cells in neuromorphic mode
-            subSubArray[i*numSubSubArrayCol+j].numWriteCellPerOperationNeuro = numCol;	       // For SRAM or analog RRAM in neuro mode
+            subSubArray[i*numSubSubArrayCol+j].numReadCellPerOperationFPGA = numSubSubArrayCol;	           // Not relevant for IMEC
+            subSubArray[i*numSubSubArrayCol+j].numWriteCellPerOperationFPGA = numSubSubArrayCol;	       // Not relevant for IMEC
+            subSubArray[i*numSubSubArrayCol+j].numReadCellPerOperationMemory = numSubSubArrayCol;          // Define # of SRAM read cells in memory mode because SRAM does not have S/A sharing (not relevant for IMEC)
+            subSubArray[i*numSubSubArrayCol+j].numWriteCellPerOperationMemory = numSubSubArrayCol/8;       // # of write cells per operation in SRAM memory or the memory mode of multifunctional memory (not relevant for IMEC)
+            subSubArray[i*numSubSubArrayCol+j].numReadCellPerOperationNeuro = numSubSubArrayCol;           // # of SRAM read cells in neuromorphic mode
+            subSubArray[i*numSubSubArrayCol+j].numWriteCellPerOperationNeuro = numSubSubArrayCol;	       // For SRAM or analog RRAM in neuro mode
             subSubArray[i*numSubSubArrayCol+j].maxNumWritePulse = MAX(cell.maxNumLevelLTP, cell.maxNumLevelLTD);
 
         }
@@ -157,9 +195,44 @@ void NewSubArray::CalculateArea() {  //calculate layout area for total design
     emptyArea = area - usedArea;
 }
 
-// void NewSubArray::CalculateLatency(double columnRes, const vector<double> &columnResistance, bool CalculateclkFreq) {   //calculate latency for different mode 
+void NewSubArray::CalculateLatency(double columnRes, const vector<double> &columnResistance, bool CalculateclkFreq) {   //calculate latency for different mode 
+    readLatency = 0;
+    readLatencyADC = 0;
+    readLatencyAccum = 0;
+    writeLatency = 0;
 
-// }
+    topPeripheralLatency = 0;
+    botPeripheralLatency = 0;
+    leftPeripheralLatency = 0;
+    arrayLatency = 0;
+
+    for (int i = 0; i < numSubSubArrayRow; i++) {
+        for (int j = 0; j < numSubSubArrayCol; j++) {
+            subSubArray[i*numSubSubArrayCol+j].CalculateLatency(columnRes, columnResistance, CalculateclkFreq);
+
+            if (i == 0 && j == 0) subSubArray[i*numSubSubArrayCol+j].ValidateLatency();
+
+            if (i == 0) { // First Row Includes Top Peripherals
+                topPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].topPeripheralLatency;
+            }
+            else if (i == numSubSubArrayRow-1) { // Last Row Includes Bottom Peripherals
+                botPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].botPeripheralLatency;
+                readLatencyADC += subSubArray[i*numSubSubArrayCol+j].readLatencyADC;
+                readLatencyAccum += subSubArray[i*numSubSubArrayCol+j].readLatencyAccum;
+            }
+            if (j == 0) { // First Column Includes Left Peripherals
+                leftPeripheralLatency += subSubArray[i*numSubSubArrayCol+j].leftPeripheralLatency;
+            }
+
+            arrayLatency += subSubArray[i*numSubSubArrayCol+j].arrayLatency;
+        }
+    }
+
+    readLatency += topPeripheralLatency;
+    readLatency += botPeripheralLatency;
+    readLatency += leftPeripheralLatency;
+    readLatency += arrayLatency;
+}
 
 // void NewSubArray::CalculatePower(const vector<double> &columnResistance) {
 

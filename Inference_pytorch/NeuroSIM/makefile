@@ -44,7 +44,7 @@ SRC := $(filter-out $(MAINS),$(ALLSRC))
 ALLOBJ := $(ALLSRC:.cpp=.o)
 OBJ := $(SRC:.cpp=.o)
 
-CXX := g++
+CXX := g++ -g
 CXXFLAGS := -ggdb -fopenmp -O3 -std=c++0x -w	# -w disables warnings
 
 

@@ -83,6 +83,7 @@ public:
 	void CalculateArea();
 	void ValidateArea();
 	void CalculateLatency(double _rampInput, const vector<double> &columnResistance, bool CalculateclkFreq);
+	void ValidateLatency();
 	void CalculatePower(const vector<double> &columnResistance);
 
 	/* Properties */	
@@ -164,6 +165,7 @@ public:
 	double areaADC, areaAccum, areaOther, readLatencyADC, readLatencyAccum, readLatencyOther, readDynamicEnergyADC, readDynamicEnergyAccum, readDynamicEnergyOther;
 	double readDynamicEnergyStorage;
 	double topPeripheralHeight, botPeripheralHeight, leftPeripheralWidth, topPeripheralArea, botPeripheralArea, leftPeripheralArea, peripheralArea;
+	double topPeripheralLatency, botPeripheralLatency, leftPeripheralLatency, arrayLatency;
 	
 	bool trainingEstimation, parallelTrans;
 	int levelOutputTrans, numRowMuxedTrans, numReadPulseTrans;

@@ -82,7 +82,7 @@ public:
 	void PrintProperty();
 	void Initialize(int _numRow, int _numCol, double _unitWireRes, int _subSubArrayRow, int _subSubArrayCol);
 	void CalculateArea();
-	// void CalculateLatency(double _rampInput, const vector<double> &columnResistance, bool CalculateclkFreq);
+	void CalculateLatency(double _rampInput, const vector<double> &columnResistance, bool CalculateclkFreq);
 	// void CalculatePower(const vector<double> &columnResistance);
     void PrintId();
 
@@ -94,10 +94,15 @@ public:
 	int subSubArrayRow, subSubArrayCol;
 	int numSubSubArrayRow, numSubSubArrayCol;
 
+    double resCellAccess;
+    double capCellAccess;
+
     double heightArray;
 	double widthArray;
 	double areaArray;
 
+    double readLatencyADC, readLatencyAccum;
+	double topPeripheralLatency, botPeripheralLatency, leftPeripheralLatency, arrayLatency;
 
 	double readDynamicEnergyArray, writeDynamicEnergyArray;
 

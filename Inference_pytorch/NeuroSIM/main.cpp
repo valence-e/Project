@@ -60,8 +60,48 @@
 using namespace std;
 
 vector<vector<double> > getNetStructure(const string &inputfile);
+// vector<vector<double> > LoadInInputData(const string &inputfile);
 
 int main(int argc, char * argv[]) {   
+
+	// Param Init
+	param->synapseBit = atoi(argv[2]);              // precision of synapse weight
+	param->numBitInput = atoi(argv[3]);             // precision of input neural activation
+	if (param->cellBit > param->synapseBit) {
+		cout << "ERROR!: Memory precision is even higher than synapse precision, please modify 'cellBit' in Param.cpp!" << endl;
+		param->cellBit = param->synapseBit;
+	}
+	
+	/*** initialize operationMode as default ***/
+	param->conventionalParallel = 0;
+	param->conventionalSequential = 0;
+	param->BNNparallelMode = 0;                // parallel BNN
+	param->BNNsequentialMode = 0;              // sequential BNN
+	param->XNORsequentialMode = 0;           // Use several multi-bit RRAM as one synapse
+	param->XNORparallelMode = 0;         // Use several multi-bit RRAM as one synapse
+	switch(param->operationmode) {
+		case 6:	    param->XNORparallelMode = 1;               break;     
+		case 5:	    param->XNORsequentialMode = 1;             break;     
+		case 4:	    param->BNNparallelMode = 1;                break;     
+		case 3:	    param->BNNsequentialMode = 1;              break;    
+		case 2:	    param->conventionalParallel = 1;           break;     
+		case 1:	    param->conventionalSequential = 1;         break;    
+		case -1:	break;
+		default:	exit(-1);
+	}
+	
+	if (param->XNORparallelMode || param->XNORsequentialMode) {
+		param->numRowPerSynapse = 2;
+	} else {
+		param->numRowPerSynapse = 1;
+	}
+	if (param->BNNparallelMode) {
+		param->numColPerSynapse = 2;
+	} else if (param->XNORparallelMode || param->XNORsequentialMode || param->BNNsequentialMode) {
+		param->numColPerSynapse = 1;
+	} else {
+		param->numColPerSynapse = ceil((double)param->synapseBit/(double)param->cellBit); 
+	}
 
 	switch(param->memcelltype) {
 		case 3:     cell.memCellType = Type::FeFET; break;
@@ -105,17 +145,63 @@ int main(int argc, char * argv[]) {
 		cell.widthInFeatureSize = (cell.accessType==CMOS_access)? param->widthInFeatureSize1T1R : param->widthInFeatureSizeCrossbar;            // Cell width in feature size
 	} 
 
+	vector<vector<double> > netStructure;
+	netStructure = getNetStructure(argv[1]);
+
+	int l = 1;
+	int weightMatrixRow = netStructure[l][2]*netStructure[l][3]*netStructure[l][4]*param->numRowPerSynapse;
+	int weightMatrixCol = netStructure[l][5]*param->numColPerSynapse;
+	int numRowMatrix = min(param->numRowSubArray, weightMatrixRow);
+	int numColMatrix = min(param->numColSubArray, weightMatrixCol);
+	int numInVector = (netStructure[l][0]-netStructure[l][3]+1)/netStructure[l][7]*(netStructure[l][1]-netStructure[l][4]+1)/netStructure[l][7];
+
+	cout <<  netStructure[l][2] << ", " << netStructure[l][3] << ", " << netStructure[l][4] << endl;
+	cout <<  weightMatrixRow << ", " << numRowMatrix << ", " << numInVector << endl;
+
+	// Load Weight Vectors
+	vector<vector<double> > newMemory;
+	newMemory = LoadInWeightData(argv[4], param->numRowPerSynapse, param->numColPerSynapse, param->maxConductance, param->minConductance);
+	cout << newMemory.size() << "x" << newMemory[0].size() << endl;
+
+	vector<vector<double> > pEMemory;
+	pEMemory = CopyPEArray(newMemory, 0, 0, weightMatrixRow, weightMatrixCol);
+	cout << pEMemory.size() << "x" << pEMemory[0].size() << endl;
+
+	vector<vector<double> > subArrayMemory;
+	subArrayMemory = CopySubArray(pEMemory, 0, 0, numRowMatrix, numColMatrix);	
+	cout << subArrayMemory.size() << "x" << subArrayMemory[0].size() << endl;
+
+	// Load Input Vectors
+	vector<vector<double> > inputVector;
+	inputVector = LoadInInputData(argv[5]); 
+	cout << inputVector.size() << "x" << inputVector[0].size() << endl;
+
+	vector<vector<double> > pEInput;
+	pEInput = CopyPEInput(inputVector, 0, numInVector, weightMatrixRow);
+	cout << pEInput.size() << "x" << pEInput[0].size() << endl;
+
+	vector<vector<double> > subArrayInput;
+	subArrayInput = CopySubInput(pEInput, 0, numInVector, numRowMatrix);
+	cout << subArrayInput.size() << "x" << subArrayInput[0].size() << endl;
+
+	double activityRowRead = 0;
+	vector<double> input; 
+	input = GetInputVector(subArrayInput, 0, &activityRowRead);
+	cout << input.size() << endl;
+
 	NewSubArray *subArray = new NewSubArray(inputParameter, tech, cell);
 	subArray->Initialize(128, 128, param->unitLengthWireResistance, 8, 8);
-	subArray->PrintId();
+	// subArray->PrintId();
 	subArray->CalculateArea();
 
+	vector<double> columnResistance;
+	columnResistance = GetColumnResistance(input, subArrayMemory, cell, param->parallelRead, subArray->resCellAccess);
+	subArray->CalculateLatency(1e20, columnResistance, false);
+}
 // 	auto start = chrono::high_resolution_clock::now();
 	
 // 	gen.seed(0);
 	
-// 	vector<vector<double> > netStructure;
-// 	netStructure = getNetStructure(argv[1]);
 	
 // 	// define weight/input/memory precision from wrapper
 // 	param->synapseBit = atoi(argv[2]);              // precision of synapse weight
@@ -696,21 +782,72 @@ int main(int argc, char * argv[]) {
 // 	return 0;
 // }
 
-// vector<vector<double> > getNetStructure(const string &inputfile) {
-// 	ifstream infile(inputfile.c_str());      
+vector<vector<double> > getNetStructure(const string &inputfile) {
+	ifstream infile(inputfile.c_str());      
+	string inputline;
+	string inputval;
+	
+	int ROWin=0, COLin=0;      
+	if (!infile.good()) {        
+		cerr << "Error: the input file cannot be opened!" << endl;
+		exit(1);
+	}else{
+		while (getline(infile, inputline, '\n')) {       
+			ROWin++;                                
+		}
+		infile.clear();
+		infile.seekg(0, ios::beg);      
+		if (getline(infile, inputline, '\n')) {        
+			istringstream iss (inputline);      
+			while (getline(iss, inputval, ',')) {       
+				COLin++;
+			}
+		}	
+	}
+	infile.clear();
+	infile.seekg(0, ios::beg);          
+
+	vector<vector<double> > netStructure;               
+	for (int row=0; row<ROWin; row++) {	
+		vector<double> netStructurerow;
+		getline(infile, inputline, '\n');             
+		istringstream iss;
+		iss.str(inputline);
+		for (int col=0; col<COLin; col++) {       
+			while(getline(iss, inputval, ',')){	
+				istringstream fs;
+				fs.str(inputval);
+				double f=0;
+				fs >> f;				
+				netStructurerow.push_back(f);			
+			}			
+		}		
+		netStructure.push_back(netStructurerow);
+	}
+	infile.close();
+	
+	return netStructure;
+	netStructure.clear();
+}	
+
+
+
+// vector<vector<double> > LoadInInputData(const string &inputfile) {
+	
+// 	ifstream infile(inputfile.c_str());     
 // 	string inputline;
 // 	string inputval;
 	
 // 	int ROWin=0, COLin=0;      
-// 	if (!infile.good()) {        
+// 	if (!infile.good()) {       
 // 		cerr << "Error: the input file cannot be opened!" << endl;
 // 		exit(1);
 // 	}else{
-// 		while (getline(infile, inputline, '\n')) {       
-// 			ROWin++;                                
+// 		while (getline(infile, inputline, '\n')) {      
+// 			ROWin++;                               
 // 		}
 // 		infile.clear();
-// 		infile.seekg(0, ios::beg);      
+// 		infile.seekg(0, ios::beg);    
 // 		if (getline(infile, inputline, '\n')) {        
 // 			istringstream iss (inputline);      
 // 			while (getline(iss, inputval, ',')) {       
@@ -721,28 +858,53 @@ int main(int argc, char * argv[]) {
 // 	infile.clear();
 // 	infile.seekg(0, ios::beg);          
 
-// 	vector<vector<double> > netStructure;               
+// 	vector<vector<double> > inputvector;              
+// 	// load the data into inputvector ...
 // 	for (int row=0; row<ROWin; row++) {	
-// 		vector<double> netStructurerow;
+// 		vector<double> inputvectorrow;
+// 		vector<double> inputvectorrowb;
 // 		getline(infile, inputline, '\n');             
 // 		istringstream iss;
 // 		iss.str(inputline);
-// 		for (int col=0; col<COLin; col++) {       
+// 		for (int col=0; col<COLin; col++) {
 // 			while(getline(iss, inputval, ',')){	
 // 				istringstream fs;
 // 				fs.str(inputval);
 // 				double f=0;
-// 				fs >> f;				
-// 				netStructurerow.push_back(f);			
-// 			}			
-// 		}		
-// 		netStructure.push_back(netStructurerow);
+// 				fs >> f;
+				
+// 				if (param->BNNparallelMode) {
+// 					if (f == 1) {
+// 						inputvectorrow.push_back(1);
+// 					} else {
+// 						inputvectorrow.push_back(0);
+// 					}
+// 				} else if (param->XNORparallelMode || param->XNORsequentialMode) {
+// 					if (f == 1) {
+// 						inputvectorrow.push_back(1);
+// 						inputvectorrowb.push_back(0);
+// 					} else {
+// 						inputvectorrow.push_back(0);
+// 						inputvectorrowb.push_back(1);
+// 					}
+// 				} else {
+// 					inputvectorrow.push_back(f);
+// 				}
+// 			}
+// 		}
+// 		if (param->XNORparallelMode || param->XNORsequentialMode) {
+// 			inputvector.push_back(inputvectorrow);
+// 			inputvectorrow.clear();
+// 			inputvector.push_back(inputvectorrowb);
+// 			inputvectorrowb.clear();
+// 		} else {
+// 			inputvector.push_back(inputvectorrow);
+// 			inputvectorrow.clear();
+// 		}
 // 	}
+// 	// close the input file ...
 // 	infile.close();
 	
-// 	return netStructure;
-// 	netStructure.clear();
-}	
-
-
-
+// 	return inputvector;
+// 	inputvector.clear();
+// }

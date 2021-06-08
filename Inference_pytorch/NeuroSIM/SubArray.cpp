@@ -663,6 +663,12 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 						readLatency += colDelay;
 						readLatency += senseAmp.readLatency;
 						readLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+						
+						leftPeripheralLatency += wlDecoder.readLatency * (validated==true? param->beta : 1);
+						topPeripheralLatency += precharger.readLatency * (validated==true? param->beta : 1);
+						botPeripheralLatency += senseAmp.readLatency * (validated==true? param->beta : 1);
+						
+						arrayLatency = colDelay * (validated==true? param->beta : 1);
 					}
 				} 
 				if (!CalculateclkFreq) {
@@ -675,10 +681,18 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 					if (param->synchronous) {
 						readLatencyADC = numReadOperationPerRow*numRow*activityRowRead;
 						readLatencyAccum = adder.readLatency + shiftAdd.readLatency;
+
+						botPeripheralLatency += readLatencyADC + readLatencyAccum;
 					} else {
-						readLatencyADC = (precharger.readLatency + colDelay + senseAmp.readLatency) * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1);;
+						readLatencyADC = (precharger.readLatency + colDelay + senseAmp.readLatency) * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1);
 						readLatencyAccum = adder.readLatency + dff.readLatency + shiftAdd.readLatency;
-						readLatencyOther = wlDecoder.readLatency * numRow*activityRowRead * (validated==true? param->beta : 1);;
+						readLatencyOther = wlDecoder.readLatency * numRow*activityRowRead * (validated==true? param->beta : 1);
+
+						leftPeripheralLatency += wlDecoder.readLatency * numRow*activityRowRead * (validated==true? param->beta : 1);
+						topPeripheralLatency += precharger.readLatency * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1);
+						botPeripheralLatency += senseAmp.readLatency * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1) + readLatencyAccum;
+						
+						arrayLatency = colDelay * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1);
 					}
 					readLatency = readLatencyADC + readLatencyAccum + readLatencyOther;
 				}	
@@ -727,6 +741,16 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 						readLatency += multilevelSAEncoder.readLatency;
 						readLatency += sarADC.readLatency;
 						readLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+
+						leftPeripheralLatency += MAX(wlSwitchMatrix.readLatency, ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) );
+						topPeripheralLatency += precharger.readLatency;
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+
+						leftPeripheralLatency *= (validated==true? param->beta : 1);
+						topPeripheralLatency *= (validated==true? param->beta : 1);
+						botPeripheralLatency *= (validated==true? param->beta : 1);
+						
+						arrayLatency = colDelay * (validated==true? param->beta : 1);
 					}
 				}
 				if (!CalculateclkFreq) {
@@ -735,9 +759,21 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 					}
 					if (param->synchronous) {
 						readLatencyADC = numColMuxed;
+
+						botPeripheralLatency += numColMuxed;
 					} else {
 						readLatencyADC = (precharger.readLatency + colDelay + multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency) * numColMuxed * (validated==true? param->beta : 1);;
 						readLatencyOther = MAX(wlSwitchMatrix.readLatency, ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) ) * numColMuxed * (validated==true? param->beta : 1);;
+
+						leftPeripheralLatency += MAX(wlSwitchMatrix.readLatency, ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) );
+						topPeripheralLatency += precharger.readLatency;
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+
+						leftPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						topPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						botPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+
+						arrayLatency = colDelay * numColMuxed * (validated==true? param->beta : 1);
 					}
 					readLatencyAccum = shiftAdd.readLatency;
 					readLatency = readLatencyADC + readLatencyAccum + readLatencyOther;
@@ -765,6 +801,16 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 						readLatency += colDelay;
 						readLatency += senseAmp.readLatency;
 						readLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+
+						leftPeripheralLatency += wlDecoder.readLatency;
+						topPeripheralLatency += precharger.readLatency;
+						botPeripheralLatency += senseAmp.readLatency;
+
+						leftPeripheralLatency *= (validated==true? param->beta : 1);
+						topPeripheralLatency *= (validated==true? param->beta : 1);
+						botPeripheralLatency *= (validated==true? param->beta : 1);
+
+						arrayLatency = colDelay * (validated==true? param->beta : 1);
 					}
 				}
 				if (!CalculateclkFreq) {
@@ -773,10 +819,18 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 					if (param->synchronous) {
 						readLatencyADC = numReadOperationPerRow*numRow*activityRowRead;
 						readLatencyAccum = adder.readLatency;
+
+						botPeripheralLatency += readLatencyADC + readLatencyAccum;
 					} else {
-						readLatencyADC = (precharger.readLatency + colDelay + senseAmp.readLatency) * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1);;
+						readLatencyADC = (precharger.readLatency + colDelay + senseAmp.readLatency) * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1);
 						readLatencyAccum = adder.readLatency + dff.readLatency;
-						readLatencyOther = wlDecoder.readLatency * numRow*activityRowRead * (validated==true? param->beta : 1);;
+						readLatencyOther = wlDecoder.readLatency * numRow*activityRowRead * (validated==true? param->beta : 1);
+
+						leftPeripheralLatency += wlDecoder.readLatency  * numRow*activityRowRead * (validated==true? param->beta : 1);
+						topPeripheralLatency += precharger.readLatency * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1);
+						botPeripheralLatency += adder.readLatency + dff.readLatency + (senseAmp.readLatency * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1));
+
+						arrayLatency = colDelay * numReadOperationPerRow*numRow*activityRowRead * (validated==true? param->beta : 1);
 					}				
 					readLatency = readLatencyADC + readLatencyAccum + readLatencyOther;
 				}				
@@ -814,14 +868,38 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 						readLatency += multilevelSAEncoder.readLatency;
 						readLatency += sarADC.readLatency;
 						readLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+
+						topPeripheralLatency += wlSwitchMatrix.readLatency + precharger.readLatency;
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+						topPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+						botPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+
+						arrayLatency = colDelay * (validated==true? param->beta : 1);
 					}
 				}
 				if (!CalculateclkFreq) {
 					if (param->synchronous) {
 						readLatencyADC = numColMuxed;
+
+						botPeripheralLatency += readLatencyADC;
 					} else {
 						readLatencyADC = (precharger.readLatency + colDelay + multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency) * numColMuxed * (validated==true? param->beta : 1);;
 						readLatencyOther = MAX(wlSwitchMatrix.readLatency, ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) ) * numColMuxed * (validated==true? param->beta : 1);;
+
+						leftPeripheralLatency += wlDecoder.readLatency;
+						topPeripheralLatency += precharger.readLatency;
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+						if (wlSwitchMatrix.readLatency > ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0)) {
+							topPeripheralLatency += wlSwitchMatrix.readLatency;
+						} else {
+							leftPeripheralLatency += ((numColMuxed > 1)==true? (muxDecoder.readLatency):0);
+							botPeripheralLatency += ((numColMuxed > 1)==true? (mux.readLatency):0);
+						}
+						leftPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						topPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						botPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+
+						arrayLatency = colDelay * numColMuxed * (validated==true? param->beta : 1);
 					}
 					readLatency = readLatencyADC + readLatencyAccum + readLatencyOther;
 				}			
@@ -860,6 +938,19 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 						readLatency += multilevelSAEncoder.readLatency;
 						readLatency += sarADC.readLatency;
 						readLatency *= (validated==true? param->beta : 1);		// latency factor of sensing cycle, beta = 1.4 by default
+
+						if ( (wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency) > ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) ) {
+							leftPeripheralLatency += wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency;
+						} else {
+							leftPeripheralLatency += ((numColMuxed > 1)==true? (muxDecoder.readLatency):0);
+							botPeripheralLatency += ((numColMuxed > 1)==true? (mux.readLatency):0);
+						}
+
+						leftPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+						botPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+
+						arrayLatency = colDelay * (validated==true? param->beta : 1);
 					}
 				}
 				if (!CalculateclkFreq) {
@@ -871,10 +962,29 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 					if (param->synchronous) {
 						readLatencyADC = numRow*activityRowRead*numColMuxed;
 						readLatencyAccum = adder.readLatency + shiftAdd.readLatency;
+
+						botPeripheralLatency = readLatencyADC + readLatencyAccum;
 					} else {
 						readLatencyADC = (multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency + colDelay) * (numRow*activityRowRead*numColMuxed) * (validated==true? param->beta : 1);
 						readLatencyAccum = adder.readLatency + dff.readLatency + shiftAdd.readLatency;	
 						readLatencyOther = MAX((wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency)*numRow*activityRowRead, ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0)) * numColMuxed * (validated==true? param->beta : 1);
+
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+						botPeripheralLatency *= (numRow*activityRowRead*numColMuxed) * (validated==true? param->beta : 1);
+
+						if ( ((wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency)*numRow*activityRowRead)
+							 > (((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0))
+						) {
+							leftPeripheralLatency += (wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency)*numRow*activityRowRead;
+						} else {
+							leftPeripheralLatency += (numColMuxed > 1)==true? (muxDecoder.readLatency):0;
+							botPeripheralLatency += (numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0;
+						}
+						leftPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						botPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						botPeripheralLatency += readLatencyAccum;
+
+						arrayLatency = colDelay * (numRow*activityRowRead*numColMuxed) * (validated==true? param->beta : 1);
 					}
 					readLatency = readLatencyADC + readLatencyAccum + readLatencyOther;
 				}
@@ -917,6 +1027,21 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 						readLatency += multilevelSAEncoder.readLatency;
 						readLatency += sarADC.readLatency;
 						readLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default									
+
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+
+						if ( (wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency) > ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) ) {
+							topPeripheralLatency += wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency;
+						} else {
+							botPeripheralLatency += ((numColMuxed > 1)==true? (mux.readLatency):0);
+							leftPeripheralLatency += ((numColMuxed > 1)==true? (muxDecoder.readLatency):0);
+						}
+
+						leftPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default									
+						botPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default									
+						topPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default									
+
+						arrayLatency = colDelay * (validated==true? param->beta : 1);
 					}
 				}
 				if (!CalculateclkFreq) {
@@ -925,12 +1050,29 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 					}
 					if (param->synchronous) {
 						readLatencyADC = numColMuxed;
+						botPeripheralLatency = readLatencyADC;
 					} else {
 						readLatencyADC = (multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency + colDelay) * numColMuxed * (validated==true? param->beta : 1);
 						readLatencyOther = MAX(wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency, ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0)) * numColMuxed * (validated==true? param->beta : 1);
+
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+						if ( (wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency) > ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) ) {
+							topPeripheralLatency += wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency;
+						} else {
+							botPeripheralLatency += ((numColMuxed > 1)==true? (mux.readLatency):0);
+							leftPeripheralLatency += ((numColMuxed > 1)==true? (muxDecoder.readLatency):0);
+						}
 					}
+					topPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+					botPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+					leftPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+					
+					botPeripheralLatency += shiftAdd.readLatency;
+
 					readLatencyAccum = shiftAdd.readLatency;
 					readLatency = readLatencyADC + readLatencyAccum + readLatencyOther;
+
+					arrayLatency = colDelay * numColMuxed * (validated==true? param->beta : 1);
 				}
 			} else if (BNNsequentialMode || XNORsequentialMode) {
 				double capBL = lengthCol * 0.2e-15/1e-6;
@@ -956,6 +1098,18 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 						readLatency += colDelay;
 						readLatency += rowCurrentSenseAmp.readLatency;
 						readLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+
+						botPeripheralLatency += rowCurrentSenseAmp.readLatency;
+						if ( (wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency) > ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) ) {
+							leftPeripheralLatency += wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency;
+						} else {
+							botPeripheralLatency += ((numColMuxed > 1)==true? (mux.readLatency):0);
+							leftPeripheralLatency += ((numColMuxed > 1)==true? (muxDecoder.readLatency):0);
+						}
+						botPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+						leftPeripheralLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+
+						arrayLatency = colDelay * (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
 					}
 				}
 				if (!CalculateclkFreq) {
@@ -964,10 +1118,26 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 					if (param->synchronous) {
 						readLatencyADC = numRow*activityRowRead*numColMuxed;
 						readLatencyAccum = adder.readLatency;
+						
+						botPeripheralLatency += readLatencyADC + readLatencyAccum;
 					} else { 
 						readLatencyADC = (rowCurrentSenseAmp.readLatency + colDelay) * numRow*activityRowRead*numColMuxed * (validated==true? param->beta : 1);
 						readLatencyAccum = adder.readLatency + dff.readLatency;
 						readLatencyOther = MAX((wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency)*numRow*activityRowRead, ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0)) * numColMuxed * (validated==true? param->beta : 1);
+
+						botPeripheralLatency += rowCurrentSenseAmp.readLatency * numRow*activityRowRead;
+						if ( ((wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency)*numRow*activityRowRead) > (((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0)) ) {
+							leftPeripheralLatency += (wlDecoder.readLatency + wlNewDecoderDriver.readLatency + wlDecoderDriver.readLatency)*numRow*activityRowRead;
+						} else {
+							leftPeripheralLatency += ((numColMuxed > 1)==true? (muxDecoder.readLatency):0);
+							botPeripheralLatency += ((numColMuxed > 1)==true? (mux.readLatency):0);
+						}
+						leftPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						botPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+
+						botPeripheralLatency += readLatencyAccum;
+
+						arrayLatency = colDelay * numRow*activityRowRead*numColMuxed * (validated==true? param->beta : 1);
 					}					
 					readLatency = readLatencyADC + readLatencyAccum + readLatencyOther;
 				}
@@ -1001,20 +1171,54 @@ void SubArray::CalculateLatency(double columnRes, const vector<double> &columnRe
 						readLatency += multilevelSAEncoder.readLatency;
 						readLatency += sarADC.readLatency;
 						readLatency *= (validated==true? param->beta : 1);	// latency factor of sensing cycle, beta = 1.4 by default
+
+						if ( (wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency) > ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) ) {
+							topPeripheralLatency += wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency;
+						} else {
+							botPeripheralLatency += ((numColMuxed > 1)==true? (mux.readLatency):0);
+							leftPeripheralLatency += ((numColMuxed > 1)==true? (muxDecoder.readLatency):0);
+						}
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+
+						leftPeripheralLatency *= (validated==true? param->beta : 1);
+						topPeripheralLatency *= (validated==true? param->beta : 1);
+						botPeripheralLatency *= (validated==true? param->beta : 1);
+
+						arrayLatency = colDelay * numRow*activityRowRead*numColMuxed * (validated==true? param->beta : 1);
 					}
 				}
 				if (!CalculateclkFreq) {					
 					if (param->synchronous) {
 						readLatencyADC = numColMuxed;
+						botPeripheralLatency += readLatencyADC;
 					} else { 
 						readLatencyADC = (multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency + colDelay) * numColMuxed * (validated==true? param->beta : 1);
 						readLatencyOther = MAX(wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency, ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0)) * numColMuxed * (validated==true? param->beta : 1);
+
+						botPeripheralLatency += multilevelSenseAmp.readLatency + multilevelSAEncoder.readLatency + sarADC.readLatency;
+						if ( (wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency) > ((numColMuxed > 1)==true? (mux.readLatency+muxDecoder.readLatency):0) ) {
+							topPeripheralLatency += wlNewSwitchMatrix.readLatency + wlSwitchMatrix.readLatency;
+						} else {
+							leftPeripheralLatency += ((numColMuxed > 1)==true? (muxDecoder.readLatency):0);
+							botPeripheralLatency += ((numColMuxed > 1)==true? (mux.readLatency):0);
+						}
+						leftPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						botPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+						topPeripheralLatency *= numColMuxed * (validated==true? param->beta : 1);
+
+						arrayLatency = colDelay * numColMuxed * (validated==true? param->beta : 1);
 					}					
 					readLatency = readLatencyADC + readLatencyAccum + readLatencyOther;
 				}
 			}
 		}
 	}
+}
+
+void SubArray::ValidateLatency() {
+	double newLat = leftPeripheralLatency + topPeripheralLatency + botPeripheralLatency;
+	if ((newLat + arrayLatency) == readLatency) cout << "Latency Calculation Error" << endl;
+	else cout << "Latency Validated" << endl;
 }
 
 void SubArray::CalculatePower(const vector<double> &columnResistance) {
